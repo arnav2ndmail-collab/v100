@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
+import Nav from '../components/Nav'
+import Nav from '../components/Nav'
 
 export default function Solutions() {
   const [solutions, setSolutions] = useState([])
@@ -46,23 +48,12 @@ export default function Solutions() {
       <style>{CSS}</style>
 
       {/* Header */}
-      <header className="hdr">
-        <div className="logo" onClick={()=>window.location.href='/'}>
-          <div className="logo-mark">TZ</div>
-          <div className="logo-txt">Test<span>Zyro</span></div>
-        </div>
-        <nav className="nav">
-          <a href="/" className="nb">📚 Library</a>
-          <a href="/analyser" className="nb">📊 Analyser</a>
-          <span className="nb active">📄 Solutions</span>
-          <a href="/admin" className="nb">⚙️ Admin</a>
-        </nav>
-      </header>
+      <Nav active="Solutions"/>
 
       <div className="wrap anim">
         <div className="page-top">
           <div>
-            <h2>📄 Solutions</h2>
+            <h2>Solutions</h2>
             <p>Download answer keys and solutions for all tests</p>
           </div>
           <div className="top-right">
