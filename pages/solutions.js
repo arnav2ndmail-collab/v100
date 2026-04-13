@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Head from 'next/head'
 import Nav from '../components/Nav'
-import Nav from '../components/Nav'
 
 export default function Solutions() {
   const [solutions, setSolutions] = useState([])
