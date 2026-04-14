@@ -1,20 +1,38 @@
 import { useState, useRef, useEffect } from 'react'
 import Head from 'next/head'
+import Nav from '../components/Nav'
+
+// ── Icons ──────────────────────────────────────────────────────────────────
+const Ic = {
+  correct:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><polyline points="20 6 9 17 4 12"/></svg>,
+  wrong:     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  skip:      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="9 18 15 12 9 6"/></svg>,
+  na:        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  bookmark:  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>,
+  clock:     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  chart:     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>,
+  target:    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>,
+  bolt:      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+  upload:    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>,
+  warning:   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  star:      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+}
 
 const SUBJ_ORDER = ['Physics','Chemistry','Maths','English & LR','Bonus']
 const SC = {
-  'Physics':      { bg:'#1565c0', grd:'linear-gradient(135deg,#1565c0,#1e88e5)', light:'#e3f2fd', dot:'#42a5f5', label:'PHY', emoji:'⚡', dark:'#0d47a1' },
-  'Chemistry':    { bg:'#2e7d32', grd:'linear-gradient(135deg,#2e7d32,#43a047)', light:'#e8f5e9', dot:'#66bb6a', label:'CHEM', emoji:'🧪', dark:'#1b5e20' },
-  'Maths':        { bg:'#c62828', grd:'linear-gradient(135deg,#c62828,#e53935)', light:'#ffebee', dot:'#ef5350', label:'MATH', emoji:'📐', dark:'#b71c1c' },
-  'English & LR': { bg:'#6a1b9a', grd:'linear-gradient(135deg,#6a1b9a,#8e24aa)', light:'#f3e5f5', dot:'#ab47bc', label:'ENG',  emoji:'📖', dark:'#4a148c' },
-  'Bonus':        { bg:'#e65100', grd:'linear-gradient(135deg,#e65100,#f57c00)', light:'#fff3e0', dot:'#ffa726', label:'BON',  emoji:'🎁', dark:'#bf360c' },
+  'Physics':      { bg:'#1565c0', grd:'linear-gradient(135deg,#1565c0,#1e88e5)', light:'#e3f2fd', dot:'#42a5f5', label:'PHY' },
+  'Chemistry':    { bg:'#2e7d32', grd:'linear-gradient(135deg,#2e7d32,#43a047)', light:'#e8f5e9', dot:'#66bb6a', label:'CHEM' },
+  'Maths':        { bg:'#c62828', grd:'linear-gradient(135deg,#c62828,#e53935)', light:'#ffebee', dot:'#ef5350', label:'MATH' },
+  'English & LR': { bg:'#6a1b9a', grd:'linear-gradient(135deg,#6a1b9a,#8e24aa)', light:'#f3e5f5', dot:'#ab47bc', label:'ENG'  },
+  'Bonus':        { bg:'#e65100', grd:'linear-gradient(135deg,#e65100,#f57c00)', light:'#fff3e0', dot:'#ffa726', label:'BON'  },
 }
-const getSC = s => SC[s] || { bg:'#37474f', grd:'linear-gradient(135deg,#37474f,#546e7a)', light:'#eceff1', dot:'#78909c', label:'Q', emoji:'📝', dark:'#263238' }
+const getSC = s => SC[s] || { bg:'#37474f', grd:'linear-gradient(135deg,#37474f,#546e7a)', light:'#eceff1', dot:'#78909c', label:'Q' }
+
 const RES = {
-  correct:     { color:'#2e7d32', bg:'#e8f5e9', border:'#a5d6a7', label:'✓ Correct',   icon:'✓' },
-  wrong:       { color:'#c62828', bg:'#ffebee', border:'#ef9a9a', label:'✗ Wrong',     icon:'✗' },
-  skipped:     { color:'#e65100', bg:'#fff3e0', border:'#ffcc80', label:'↩ Skipped',   icon:'↩' },
-  unattempted: { color:'#546e7a', bg:'#eceff1', border:'#b0bec5', label:'— Not Att.', icon:'—' },
+  correct:     { color:'#2e7d32', bg:'#e8f5e9', border:'#a5d6a7', label:'Correct'     },
+  wrong:       { color:'#c62828', bg:'#ffebee', border:'#ef9a9a', label:'Wrong'       },
+  skipped:     { color:'#e65100', bg:'#fff3e0', border:'#ffcc80', label:'Skipped'     },
+  unattempted: { color:'#546e7a', bg:'#eceff1', border:'#b0bec5', label:'Not Attempted'},
 }
 const DOT_BG = { correct:'#2e7d32', wrong:'#c62828', skipped:'#e65100', unattempted:'#90a4ae' }
 
@@ -24,7 +42,8 @@ function saveBooks(b) { try { localStorage.setItem(BM_KEY, JSON.stringify(b)) } 
 
 function pct(a,b) { return b ? Math.round(a/b*100) : 0 }
 function fmtTime(secs) {
-  if (!secs) return '—'
+  if (!secs && secs!==0) return '—'
+  if (secs === 0) return '0s'
   const m = Math.floor(secs/60), s = secs%60
   return m > 0 ? `${m}m ${s}s` : `${s}s`
 }
@@ -32,16 +51,62 @@ function fmtDate(iso) {
   try { return new Date(iso).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) } catch(e){return iso}
 }
 
+// ── Smart Analysis Engine ──────────────────────────────────────────────────
+function analysePerformance(data, overall, subjects, getSubjQs, mCor, mNeg) {
+  const insights = []
+  const accuracy = pct(overall.cor, overall.cor+overall.wrg)
+  const attemptRate = pct(overall.cor+overall.wrg+overall.skp, overall.total)
+  const timePerQ = data.duration ? Math.round(data.duration / overall.total) : 0
+
+  // Overall rating
+  if (accuracy >= 80) insights.push({ type:'good', text:`Outstanding accuracy of ${accuracy}% — you're well prepared!` })
+  else if (accuracy >= 60) insights.push({ type:'ok', text:`Good accuracy at ${accuracy}%. Focus on speed to attempt more.` })
+  else if (accuracy >= 40) insights.push({ type:'warn', text:`Accuracy at ${accuracy}% needs improvement. Prioritise concepts over quantity.` })
+  else insights.push({ type:'bad', text:`Low accuracy (${accuracy}%). Review fundamentals before attempting more mocks.` })
+
+  // Attempt rate
+  if (attemptRate < 70) insights.push({ type:'warn', text:`Only ${attemptRate}% questions attempted. In BITSAT every unattempted = 0, so attempt more.` })
+  else if (attemptRate >= 95) insights.push({ type:'good', text:`Excellent attempt rate of ${attemptRate}%! Great time management.` })
+
+  // Worst subject
+  const subjScores = subjects.map(s => {
+    const st = getSubjQs(s)
+    const qs = Array.isArray(st) ? st : []
+    const cor = qs.filter(q=>q.result==='correct').length
+    const wrg = qs.filter(q=>q.result==='wrong').length
+    return { s, acc: pct(cor, cor+wrg), total: qs.length, cor, wrg }
+  }).filter(x => x.cor+x.wrg > 0)
+
+  if (subjScores.length > 1) {
+    const worst = subjScores.reduce((a,b) => a.acc < b.acc ? a : b)
+    const best  = subjScores.reduce((a,b) => a.acc > b.acc ? a : b)
+    insights.push({ type:'warn', text:`Weakest subject: ${worst.s} (${worst.acc}% accuracy). Dedicate extra revision time here.` })
+    if (best.acc >= 70) insights.push({ type:'good', text:`Strongest subject: ${best.s} (${best.acc}% accuracy). Keep it up!` })
+  }
+
+  // Negative marking analysis
+  const negMarks = overall.wrg * mNeg
+  if (negMarks > 10) insights.push({ type:'warn', text:`Lost ${negMarks} marks from wrong answers. Consider skipping uncertain questions.` })
+
+  // Time analysis
+  if (timePerQ > 0) {
+    if (timePerQ < 50) insights.push({ type:'good', text:`Fast pace: ~${timePerQ}s per question. Good time management for BITSAT.` })
+    else if (timePerQ > 90) insights.push({ type:'warn', text:`Slow pace: ~${timePerQ}s/question. BITSAT needs ~54s/q. Practice speed.` })
+  }
+
+  return insights
+}
+
 export default function Analyser() {
   const [data, setData]         = useState(null)
   const [err, setErr]           = useState('')
+  const [loading, setLoading]   = useState(false)
   const [drag, setDrag]         = useState(false)
   const [tab, setTab]           = useState('overview')
   const [activeSubj, setActiveSubj] = useState(null)
   const [filter, setFilter]     = useState('all')
   const [curQ, setCurQ]         = useState(0)
   const fileRef = useRef()
-  // Bookmark
   const [books, setBooks]       = useState({})
   const [bmModal, setBmModal]   = useState(false)
   const [bmQ, setBmQ]           = useState(null)
@@ -65,7 +130,7 @@ export default function Analyser() {
         correctAnswer:(bmQ.correctAnswer||bmQ.ans||'').toString().toUpperCase(),
         hasImage:!!(bmQ.images?.length||bmQ.hasImage),
         testTitle:data.testTitle,
-        testPath:new URLSearchParams(window.location.search).get('tp')?decodeURIComponent(new URLSearchParams(window.location.search).get('tp')):'',
+        testPath:typeof window!=='undefined'?(new URLSearchParams(window.location.search).get('tp')?decodeURIComponent(new URLSearchParams(window.location.search).get('tp')):''):'',
         savedAt:Date.now()
       })
     }
@@ -88,10 +153,11 @@ export default function Analyser() {
     if(typeof window==='undefined') return
     const params=new URLSearchParams(window.location.search)
     if(params.get('src')!=='auto') return
+    setLoading(true)
     const run=async()=>{
       try{
         const stored=sessionStorage.getItem('tz_analyse')
-        if(!stored||stored==='null'){setErr('❌ No test data found. Please upload a result file.');return}
+        if(!stored||stored==='null'){setErr('No test data found. Please upload a result file.');setLoading(false);return}
         const meta=JSON.parse(stored)
         const tp=params.get('tp')?decodeURIComponent(params.get('tp')):''
         let questions
@@ -118,57 +184,78 @@ export default function Analyser() {
           correct:meta.correct,wrong:meta.wrong,skipped:meta.skipped,unattempted:meta.unattempted,
           duration:meta.duration,marksCorrect:meta.marksCorrect,marksWrong:meta.marksWrong,
           subjStats:meta.subjStats,questions})
-      }catch(e){setErr('❌ Could not load: '+e.message)}
+      }catch(e){setErr('Could not load: '+e.message)}
+      setLoading(false)
     }; run()
   },[])
 
   const loadFile=async file=>{
     setErr('');setData(null)
-    try{const d=JSON.parse(await file.text());processData(d)}catch(e){setErr('❌ '+e.message)}
+    try{const d=JSON.parse(await file.text());processData(d)}catch(e){setErr('Invalid file: '+e.message)}
   }
   const handleDrop=e=>{e.preventDefault();setDrag(false);loadFile(e.dataTransfer.files[0])}
 
-  // ── Upload screen ──────────────────────────────────────────────────────
+  // ── Upload screen ─────────────────────────────────────────────────────────
   if(!data) return(
     <>
       <Head><title>TestZyro — Analyser</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
       </Head>
-      <style>{UPLOAD_CSS}</style>
-      <div className="upload-page">
-        <a href="/" className="up-back">← Back to TestZyro</a>
+      <style>{`${BASE_CSS}
+        body{display:flex;flex-direction:column;min-height:100vh}
+        .up-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px}
+        .up-card{background:white;border-radius:24px;padding:48px 44px;width:100%;max-width:520px;box-shadow:0 8px 40px rgba(26,35,126,.12);text-align:center;border:1px solid #e8eaf6}
+        .up-icon-wrap{width:80px;height:80px;background:linear-gradient(135deg,#1565c0,#6a1b9a);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 22px;color:white;box-shadow:0 8px 24px rgba(21,101,192,.3)}
+        .up-h1{font-size:1.7rem;font-weight:900;color:#1a237e;letter-spacing:-.5px;margin-bottom:6px}
+        .up-sub{font-size:.86rem;color:#6b7280;margin-bottom:28px}
+        .up-drop{background:#f5f7ff;border:2.5px dashed #c5cae9;border-radius:16px;padding:36px 20px;cursor:pointer;transition:all .2s;margin-bottom:16px}
+        .up-drop:hover,.up-drop.drag{border-color:#1565c0;background:#e8eaf6}
+        .up-drop-icon{color:#9ca3af;margin-bottom:12px;display:flex;justify-content:center}
+        .up-drop-title{font-size:.96rem;font-weight:700;color:#1a237e;margin-bottom:4px}
+        .up-drop-sub{font-size:.78rem;color:#9ca3af;margin-bottom:16px}
+        .up-browse{background:linear-gradient(135deg,#1565c0,#6a1b9a);color:white;border:none;padding:11px 28px;border-radius:9px;font-weight:700;font-size:.84rem;cursor:pointer;font-family:'Inter',sans-serif;box-shadow:0 4px 14px rgba(21,101,192,.3)}
+        .up-err{background:#ffebee;border:1px solid #ef9a9a;color:#c62828;padding:10px 14px;border-radius:8px;font-size:.82rem;margin-top:12px;text-align:left}
+        .up-steps{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px;flex-wrap:wrap}
+        .up-step{display:flex;align-items:center;gap:6px;font-size:.74rem;color:#6b7280}
+        .up-sn{width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#6a1b9a);color:white;font-size:.62rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+        .up-arr{color:#d1d5db}
+      `}</style>
+      <Nav active="Analyser"/>
+      <div className="up-wrap">
         <div className="up-card">
-          <div className="up-icon-wrap"><span className="up-icon">📊</span></div>
-          <h1 className="up-title">Test Analyser</h1>
-          <p className="up-sub">Detailed analysis of your BITSAT performance</p>
-          <div className={`up-drop${drag?' dragging':''}`}
-            onDragOver={e=>{e.preventDefault();setDrag(true)}}
-            onDragLeave={()=>setDrag(false)}
-            onDrop={handleDrop}
-            onClick={()=>fileRef.current.click()}>
-            <div className="up-drop-icon">📥</div>
-            <div className="up-drop-title">Drop your result file here</div>
-            <div className="up-drop-sub">or click to browse · JSON output file</div>
-            <button className="up-browse-btn" onClick={e=>{e.stopPropagation();fileRef.current.click()}}>Browse File</button>
-            <input ref={fileRef} type="file" accept=".json" style={{display:'none'}} onChange={e=>{if(e.target.files[0])loadFile(e.target.files[0])}}/>
-          </div>
+          <div className="up-icon-wrap">{Ic.chart}</div>
+          <h1 className="up-h1">Test Analyser</h1>
+          <p className="up-sub">Detailed subject-wise breakdown with smart performance insights</p>
+          {loading ? <div style={{color:'#1565c0',fontWeight:600,padding:'20px 0'}}>Loading your test data…</div> : (
+            <div className={`up-drop${drag?' drag':''}`}
+              onDragOver={e=>{e.preventDefault();setDrag(true)}}
+              onDragLeave={()=>setDrag(false)}
+              onDrop={handleDrop}
+              onClick={()=>fileRef.current.click()}>
+              <div className="up-drop-icon">{Ic.upload}</div>
+              <div className="up-drop-title">Drop result .json file here</div>
+              <div className="up-drop-sub">Downloaded after submitting a test on TestZyro</div>
+              <button className="up-browse" onClick={e=>{e.stopPropagation();fileRef.current.click()}}>Browse File</button>
+              <input ref={fileRef} type="file" accept=".json" style={{display:'none'}} onChange={e=>{if(e.target.files[0])loadFile(e.target.files[0])}}/>
+            </div>
+          )}
           {err&&<div className="up-err">{err}</div>}
-          <div className="up-how">
-            <div className="up-how-step"><div className="up-step-n">1</div><span>Give a test on TestZyro</span></div>
-            <div className="up-how-arr">→</div>
-            <div className="up-how-step"><div className="up-step-n">2</div><span>Click <b>📥 Download Output</b></span></div>
-            <div className="up-how-arr">→</div>
-            <div className="up-how-step"><div className="up-step-n">3</div><span>Upload it here ✅</span></div>
+          <div className="up-steps">
+            {[['1','Give a test'],['→'],['2','Download Output'],['→'],['3','Upload here ✓']].map((s,i)=>
+              Array.isArray(s)?null:s==='→'?<span key={i} className="up-arr">→</span>:(
+                <div key={i} className="up-step"><div className="up-sn">{s[0]}</div><span>{s[1]}</span></div>
+              )
+            )}
           </div>
         </div>
       </div>
     </>
   )
 
-  // ── Computed stats ─────────────────────────────────────────────────────
+  // ── Computed ──────────────────────────────────────────────────────────────
   const allQs    = data.questions
   const subjects = SUBJ_ORDER.filter(s=>allQs.some(q=>q.subject===s))
-  const getSubjQs = s => allQs.filter(q=>q.subject===s)
+  const getSubjQsArr = s => allQs.filter(q=>q.subject===s)
   const ms = qs=>({ total:qs.length, cor:qs.filter(q=>q.result==='correct').length, wrg:qs.filter(q=>q.result==='wrong').length, skp:qs.filter(q=>q.result==='skipped').length, un:qs.filter(q=>q.result==='unattempted').length })
   const overall  = ms(allQs)
   const mCor     = data.marksCorrect||3, mNeg = data.marksWrong||1
@@ -176,7 +263,11 @@ export default function Analyser() {
   const attempted= overall.cor+overall.wrg+overall.skp
   const score    = data.score ?? (overall.cor*mCor - overall.wrg*mNeg)
   const maxScore = data.maxScore ?? (overall.total*mCor)
-  const scoreColor = score >= 0 ? '#2e7d32' : '#c62828'
+  const scoreColor = score >= maxScore*0.6 ? '#2e7d32' : score >= maxScore*0.35 ? '#e65100' : '#c62828'
+  const timePerQ = data.duration && overall.total ? Math.round(data.duration/overall.total) : 0
+
+  // Smart insights
+  const insights = analysePerformance(data, overall, subjects, getSubjQsArr, mCor, mNeg)
 
   // Review tab
   const subjQs    = activeSubj ? allQs.filter(q=>q.subject===activeSubj) : allQs
@@ -185,55 +276,55 @@ export default function Analyser() {
   const switchSubj= s=>{setActiveSubj(s);setCurQ(0);setFilter('all')}
   const openReview= s=>{switchSubj(s);setTab('review')}
 
-  const getRating = p => p>=90?'Outstanding 🏆':p>=75?'Excellent 🌟':p>=60?'Good 👍':p>=45?'Average 📚':p>=30?'Below Avg ⚠️':'Needs Work 💪'
-  const getRatingColor = p => p>=75?'#2e7d32':p>=45?'#e65100':'#c62828'
+  const getRating = p => p>=90?['Outstanding','#2e7d32']:p>=75?['Excellent','#1565c0']:p>=60?['Good','#e65100']:p>=40?['Average','#ef6c00']:['Needs Work','#c62828']
+  const [ratingLabel, ratingColor] = getRating(accuracy)
 
   return(
     <>
       <Head><title>Analyser — {data.testTitle}</title>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet"/>
       </Head>
-      <style>{APP_CSS}</style>
+      <style>{`${BASE_CSS}${APP_CSS}`}</style>
+      <Nav active="Analyser"/>
 
-      {/* ── Header ── */}
-      <header className="hdr">
-        <a href="/" className="hdr-logo"><div className="hdr-mark">TZ</div><span><b>Test</b>Zyro</span></a>
-        <div className="hdr-tabs">
-          <button className={`hdr-tab${tab==='overview'?' on':''}`} onClick={()=>setTab('overview')}>Overview</button>
-          <button className={`hdr-tab${tab==='review'?' on':''}`} onClick={()=>setTab('review')}>Review</button>
+      {/* Analyser sub-header */}
+      <div className="sub-hdr">
+        <div className="sub-hdr-left">
+          <span className="sub-test-name">{data.testTitle}</span>
+          {data.date&&<span className="sub-date">{fmtDate(data.date)}</span>}
         </div>
-        <div className="hdr-right">
-          <a href="/" className="hdr-link">Library</a>
-          <a href="/bookmarks" className="hdr-link">Bookmarks</a>
-          <button className="hdr-new" onClick={()=>setData(null)}>↩ New File</button>
+        <div className="sub-tabs">
+          {['overview','review'].map(t=>(
+            <button key={t} className={`sub-tab${tab===t?' on':''}`} onClick={()=>setTab(t)}>
+              {t==='overview'?<>{Ic.chart} Overview</>:<>{Ic.target} Review</>}
+            </button>
+          ))}
         </div>
-      </header>
+        <button className="sub-newfile" onClick={()=>setData(null)}>↩ New File</button>
+      </div>
 
       {/* ── Bookmark Modal ── */}
       {bmModal&&(
-        <div className="bm-overlay" onClick={e=>{if(e.target.className==='bm-overlay')setBmModal(false)}}>
-          <div className="bm-modal">
-            {bmDone?<div className="bm-done">✅ Bookmarked!</div>:(
+        <div className="bm-ov" onClick={e=>{if(e.currentTarget===e.target)setBmModal(false)}}>
+          <div className="bm-box">
+            {bmDone?<div className="bm-done">Bookmarked!</div>:(
               <>
-                <div className="bm-modal-ttl">🔖 Save to Notebook</div>
+                <div className="bm-ttl">Save to Notebook</div>
                 {Object.keys(books).length>0&&!bmCreating&&(
-                  <div className="bm-nb-list">
+                  <div className="bm-list">
                     {Object.keys(books).map(nb=>(
-                      <div key={nb} className={`bm-nb-item${bmTarget===nb?' sel':''}`} onClick={()=>setBmTarget(nb)}>
+                      <div key={nb} className={`bm-item${bmTarget===nb?' sel':''}`} onClick={()=>setBmTarget(nb)}>
                         <span>{nb}</span><span className="bm-cnt">{books[nb].length} qs</span>
                       </div>
                     ))}
                   </div>
                 )}
-                {!bmCreating?(
-                  <button className="bm-create" onClick={()=>setBmCreating(true)}>+ New notebook</button>
-                ):(
-                  <input className="bm-inp" autoFocus placeholder="Notebook name…"
-                    value={bmNewName} onChange={e=>setBmNewName(e.target.value)}
-                    onKeyDown={e=>e.key==='Enter'&&doBookmark()}/>
-                )}
-                <div className="bm-actions">
-                  <button className="bm-save" onClick={doBookmark} disabled={bmCreating?!bmNewName.trim():!bmTarget}>Bookmark</button>
+                {!bmCreating
+                  ?<button className="bm-new" onClick={()=>setBmCreating(true)}>+ New notebook</button>
+                  :<input className="bm-inp" autoFocus placeholder="Notebook name…" value={bmNewName} onChange={e=>setBmNewName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&doBookmark()}/>
+                }
+                <div className="bm-acts">
+                  <button className="bm-save" onClick={doBookmark} disabled={bmCreating?!bmNewName.trim():!bmTarget}>Save</button>
                   <button className="bm-cancel" onClick={()=>setBmModal(false)}>Cancel</button>
                 </div>
               </>
@@ -242,74 +333,87 @@ export default function Analyser() {
         </div>
       )}
 
-      {/* ══════════ OVERVIEW ══════════ */}
+      {/* ══ OVERVIEW ══════════════════════════════════════════════════════════ */}
       {tab==='overview'&&(
-        <div className="page fade">
+        <div className="ov-page">
 
-          {/* ── Hero Score Card ── */}
-          <div className="hero-card">
-            <div className="hero-left">
-              <div className="hero-test-name">{data.testTitle}</div>
-              {data.date&&<div className="hero-date">{fmtDate(data.date)}</div>}
-              <div className="hero-score-wrap">
-                <div className="hero-score" style={{color:scoreColor}}>{score}</div>
-                <div className="hero-max">/ {maxScore}</div>
-              </div>
-              <div className="hero-rating" style={{color:getRatingColor(accuracy)}}>{getRating(accuracy)}</div>
+          {/* Score hero */}
+          <div className="hero">
+            <div className="hero-score-col">
+              <div className="hero-label">Total Score</div>
+              <div className="hero-score" style={{color:scoreColor}}>{score}<span className="hero-max">/{maxScore}</span></div>
+              <div className="hero-rating" style={{color:ratingColor}}>{ratingLabel}</div>
               <div className="hero-chips">
-                <span className="hero-chip">⏱ {fmtTime(data.duration)}</span>
-                <span className="hero-chip">🎯 {accuracy}% accuracy</span>
-                <span className="hero-chip">📝 {attempted}/{overall.total} attempted</span>
+                <div className="hchip">{Ic.clock} {fmtTime(data.duration)}</div>
+                <div className="hchip">{Ic.target} {accuracy}% accuracy</div>
+                <div className="hchip">{Ic.chart} {attempted}/{overall.total} attempted</div>
+                {timePerQ>0&&<div className="hchip">{Ic.clock} {fmtTime(timePerQ)}/question</div>}
               </div>
             </div>
-            <div className="hero-right">
-              {/* Big donut-style stat blocks */}
+            <div className="hero-stats">
               {[
-                {n:overall.cor,  l:'Correct',      c:'#2e7d32', bg:'#e8f5e9', ic:'✓'},
-                {n:overall.wrg,  l:'Wrong',        c:'#c62828', bg:'#ffebee', ic:'✗'},
-                {n:overall.skp,  l:'Skipped',      c:'#e65100', bg:'#fff3e0', ic:'↩'},
-                {n:overall.un,   l:'Not Attempted', c:'#546e7a', bg:'#eceff1', ic:'—'},
+                {n:overall.cor,  l:'Correct',       c:'#2e7d32', bg:'#e8f5e9', ic:Ic.correct},
+                {n:overall.wrg,  l:'Wrong',          c:'#c62828', bg:'#ffebee', ic:Ic.wrong},
+                {n:overall.skp,  l:'Skipped',        c:'#e65100', bg:'#fff3e0', ic:Ic.skip},
+                {n:overall.un,   l:'Not Attempted',  c:'#546e7a', bg:'#eceff1', ic:Ic.na},
               ].map(({n,l,c,bg,ic})=>(
-                <div key={l} className="hero-stat" style={{background:bg}}>
-                  <div className="hero-stat-ic" style={{color:c}}>{ic}</div>
-                  <div className="hero-stat-n" style={{color:c}}>{n}</div>
-                  <div className="hero-stat-l">{l}</div>
+                <div key={l} className="hstat" style={{background:bg}}>
+                  <div className="hstat-ic" style={{color:c}}>{ic}</div>
+                  <div className="hstat-n" style={{color:c}}>{n}</div>
+                  <div className="hstat-l">{l}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ── Subject Performance Cards ── */}
-          <div className="sec-title">⚡ Subject Performance</div>
-          <div className="subj-grid">
+          {/* Smart Insights */}
+          {insights.length>0&&(
+            <div className="insights-card">
+              <div className="ic-title">{Ic.bolt} Smart Insights</div>
+              <div className="ic-list">
+                {insights.map((ins,i)=>(
+                  <div key={i} className={`insight ins-${ins.type}`}>
+                    <div className="ins-dot"/>
+                    <span>{ins.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Subject cards */}
+          <div className="sec-title">{Ic.chart} Subject Performance</div>
+          <div className="scard-grid">
             {subjects.map(s=>{
-              const sc=getSC(s), st=ms(getSubjQs(s))
+              const sc=getSC(s), qs=getSubjQsArr(s), st=ms(qs)
               const sp=pct(st.cor,st.cor+st.wrg)
               const subScore=st.cor*mCor-st.wrg*mNeg
+              const subjTime = data.duration && allQs.length ? Math.round(data.duration/allQs.length*st.total) : 0
               return(
                 <div key={s} className="scard" onClick={()=>openReview(s)}>
                   <div className="scard-top" style={{background:sc.grd}}>
-                    <div className="scard-emoji">{sc.emoji}</div>
                     <div>
-                      <div className="scard-badge">{sc.label}</div>
+                      <div className="scard-lbl">{sc.label}</div>
                       <div className="scard-name">{s}</div>
                     </div>
-                    <div className="scard-score-big" style={{color:'rgba(255,255,255,.9)'}}>{subScore>=0?'+':''}{subScore}</div>
+                    <div className="scard-score" style={{color:'rgba(255,255,255,.9)'}}>
+                      {subScore>=0?'+':''}{subScore}
+                    </div>
                   </div>
                   <div className="scard-body">
-                    {/* Accuracy bar */}
-                    <div className="scard-bar-label">
+                    <div className="scard-bar-row">
                       <span>Accuracy</span><span style={{fontWeight:700,color:sc.bg}}>{sp}%</span>
                     </div>
-                    <div className="scard-bar-track">
-                      <div className="scard-bar-fill" style={{width:sp+'%',background:sc.grd}}/>
+                    <div className="scard-track"><div style={{width:sp+'%',height:'100%',background:sc.grd,borderRadius:99}}/></div>
+                    <div className="scard-stats4">
+                      <div className="ss"><span style={{color:'#2e7d32',fontWeight:800}}>{st.cor}</span><span>Correct</span></div>
+                      <div className="ss"><span style={{color:'#c62828',fontWeight:800}}>{st.wrg}</span><span>Wrong</span></div>
+                      <div className="ss"><span style={{color:'#e65100',fontWeight:800}}>{st.skp}</span><span>Skip</span></div>
+                      <div className="ss"><span style={{color:'#90a4ae',fontWeight:800}}>{st.un}</span><span>NA</span></div>
                     </div>
-                    {/* 4 stats */}
-                    <div className="scard-stats">
-                      <div className="scard-stat"><span className="ss-n" style={{color:'#2e7d32'}}>{st.cor}</span><span className="ss-l">✓ Correct</span></div>
-                      <div className="scard-stat"><span className="ss-n" style={{color:'#c62828'}}>{st.wrg}</span><span className="ss-l">✗ Wrong</span></div>
-                      <div className="scard-stat"><span className="ss-n" style={{color:'#e65100'}}>{st.skp}</span><span className="ss-l">↩ Skip</span></div>
-                      <div className="scard-stat"><span className="ss-n" style={{color:'#90a4ae'}}>{st.un}</span><span className="ss-l">— NA</span></div>
+                    <div className="scard-meta">
+                      {subjTime>0&&<span>{Ic.clock} {fmtTime(subjTime)}</span>}
+                      {st.total>0&&<span>{Ic.clock} {fmtTime(data.duration&&allQs.length?Math.round(data.duration/allQs.length):0)}/q</span>}
                     </div>
                     <button className="scard-btn">Review Questions →</button>
                   </div>
@@ -318,104 +422,74 @@ export default function Analyser() {
             })}
           </div>
 
-          {/* ── Detailed Breakdown Table ── */}
-          <div className="sec-title">📊 Detailed Breakdown</div>
-          <div className="table-wrap">
-            <table className="breakdown-table">
-              <thead>
-                <tr>
-                  <th>Subject</th>
-                  <th>Score</th>
-                  <th>Correct</th>
-                  <th>Wrong</th>
-                  <th>Skipped</th>
-                  <th>Not Att.</th>
-                  <th>Attempted</th>
-                  <th>Accuracy</th>
-                  <th>Time/Q</th>
-                </tr>
-              </thead>
+          {/* Breakdown table */}
+          <div className="sec-title">{Ic.chart} Detailed Breakdown</div>
+          <div className="tbl-wrap">
+            <table className="tbl">
+              <thead><tr>
+                <th>Subject</th><th>Score</th><th>Correct</th><th>Wrong</th><th>Skipped</th><th>Not Att.</th><th>Attempted</th><th>Accuracy</th><th>Est. Time</th><th>Per Q</th>
+              </tr></thead>
               <tbody>
-                {/* Subject rows */}
                 {subjects.map(s=>{
-                  const sc=getSC(s), st=ms(getSubjQs(s))
+                  const sc=getSC(s), qs=getSubjQsArr(s), st=ms(qs)
                   const sp=pct(st.cor,st.cor+st.wrg)
                   const subScore=st.cor*mCor-st.wrg*mNeg
                   const att=st.cor+st.wrg+st.skp
-                  return(
-                    <tr key={s} className="tbody-row" onClick={()=>openReview(s)} style={{cursor:'pointer'}}>
-                      <td>
-                        <div className="td-subj">
-                          <div className="td-dot" style={{background:sc.bg}}/>
-                          <span className="td-badge" style={{background:sc.light,color:sc.bg}}>{sc.emoji} {sc.label}</span>
-                          <span className="td-name">{s}</span>
-                        </div>
-                      </td>
-                      <td><span className="td-score" style={{color:subScore>=0?'#2e7d32':'#c62828'}}>{subScore>=0?'+':''}{subScore}</span></td>
-                      <td><span className="td-cor">{st.cor}</span></td>
-                      <td><span className="td-wrg">{st.wrg}</span></td>
-                      <td><span className="td-skp">{st.skp}</span></td>
-                      <td><span className="td-un">{st.un}</span></td>
-                      <td><span className="td-att">{att}<span className="td-den">/{st.total}</span></span></td>
-                      <td>
-                        <div className="td-acc-wrap">
-                          <div className="td-acc-bar"><div style={{width:sp+'%',height:'100%',background:sc.grd,borderRadius:99}}/></div>
-                          <span className="td-acc-pct" style={{color:sc.bg}}>{sp}%</span>
-                        </div>
-                      </td>
-                      <td><span className="td-time">{data.duration&&st.total?fmtTime(Math.round(data.duration/allQs.length)):'-'}</span></td>
-                    </tr>
-                  )
+                  const subjTime=data.duration&&allQs.length?Math.round(data.duration/allQs.length*st.total):0
+                  const perQ=data.duration&&allQs.length?Math.round(data.duration/allQs.length):0
+                  return(<tr key={s} className="trow" onClick={()=>openReview(s)}>
+                    <td><div className="td-s"><div style={{width:8,height:8,borderRadius:'50%',background:sc.bg,flexShrink:0}}/><span className="tdbadge" style={{background:sc.light,color:sc.bg}}>{sc.label}</span>{s}</div></td>
+                    <td><b style={{color:subScore>=0?'#2e7d32':'#c62828'}}>{subScore>=0?'+':''}{subScore}</b></td>
+                    <td style={{color:'#2e7d32',fontWeight:700}}>{st.cor}</td>
+                    <td style={{color:'#c62828',fontWeight:700}}>{st.wrg}</td>
+                    <td style={{color:'#e65100',fontWeight:700}}>{st.skp}</td>
+                    <td style={{color:'#90a4ae',fontWeight:700}}>{st.un}</td>
+                    <td style={{fontFamily:'JetBrains Mono,monospace'}}>{att}/{st.total}</td>
+                    <td><div className="td-acc"><div className="td-bar"><div style={{width:sp+'%',height:'100%',background:sc.grd,borderRadius:99}}/></div><b style={{color:sc.bg}}>{sp}%</b></div></td>
+                    <td style={{fontFamily:'JetBrains Mono,monospace',fontSize:'.75rem',color:'#6b7280'}}>{fmtTime(subjTime)}</td>
+                    <td style={{fontFamily:'JetBrains Mono,monospace',fontSize:'.75rem',color:'#6b7280'}}>{fmtTime(perQ)}</td>
+                  </tr>)
                 })}
-                {/* Total row */}
-                <tr className="total-row">
-                  <td><div className="td-subj"><span style={{fontWeight:800}}>🔢 Total</span></div></td>
-                  <td><span className="td-score" style={{color:scoreColor,fontSize:'1rem'}}>{score}</span></td>
-                  <td><span className="td-cor" style={{fontWeight:800}}>{overall.cor}</span></td>
-                  <td><span className="td-wrg" style={{fontWeight:800}}>{overall.wrg}</span></td>
-                  <td><span className="td-skp" style={{fontWeight:800}}>{overall.skp}</span></td>
-                  <td><span className="td-un" style={{fontWeight:800}}>{overall.un}</span></td>
-                  <td><span className="td-att" style={{fontWeight:800}}>{attempted}<span className="td-den">/{overall.total}</span></span></td>
-                  <td>
-                    <div className="td-acc-wrap">
-                      <div className="td-acc-bar"><div style={{width:accuracy+'%',height:'100%',background:'linear-gradient(90deg,#1565c0,#6a1b9a)',borderRadius:99}}/></div>
-                      <span className="td-acc-pct" style={{color:'#1565c0',fontWeight:800}}>{accuracy}%</span>
-                    </div>
-                  </td>
-                  <td><span className="td-time">{fmtTime(data.duration)}</span></td>
+                <tr className="trow-total">
+                  <td><div className="td-s"><b>Total</b></div></td>
+                  <td><b style={{color:scoreColor,fontSize:'.95rem'}}>{score}</b></td>
+                  <td style={{color:'#2e7d32',fontWeight:800}}>{overall.cor}</td>
+                  <td style={{color:'#c62828',fontWeight:800}}>{overall.wrg}</td>
+                  <td style={{color:'#e65100',fontWeight:800}}>{overall.skp}</td>
+                  <td style={{color:'#90a4ae',fontWeight:800}}>{overall.un}</td>
+                  <td style={{fontFamily:'JetBrains Mono,monospace'}}>{attempted}/{overall.total}</td>
+                  <td><div className="td-acc"><div className="td-bar"><div style={{width:accuracy+'%',height:'100%',background:'linear-gradient(90deg,#1565c0,#6a1b9a)',borderRadius:99}}/></div><b style={{color:'#1565c0'}}>{accuracy}%</b></div></td>
+                  <td style={{fontFamily:'JetBrains Mono,monospace',fontSize:'.75rem',color:'#6b7280'}}>{fmtTime(data.duration)}</td>
+                  <td style={{fontFamily:'JetBrains Mono,monospace',fontSize:'.75rem',color:'#6b7280'}}>{fmtTime(timePerQ)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
-          {/* ── Marking Scheme Info ── */}
-          <div className="marking-info">
-            <div className="mi-item"><span className="mi-dot" style={{background:'#e8f5e9',border:'1px solid #a5d6a7'}}/>Correct: <b style={{color:'#2e7d32'}}>+{mCor}</b></div>
-            <div className="mi-item"><span className="mi-dot" style={{background:'#ffebee',border:'1px solid #ef9a9a'}}/>Wrong: <b style={{color:'#c62828'}}>−{mNeg}</b></div>
-            <div className="mi-item"><span className="mi-dot" style={{background:'#eceff1',border:'1px solid #b0bec5'}}/>Skipped/NA: <b style={{color:'#546e7a'}}>0</b></div>
+          {/* Marking scheme */}
+          <div className="scheme">
+            <span style={{color:'#2e7d32',fontWeight:700}}>+{mCor} Correct</span>
+            <span style={{color:'#c62828',fontWeight:700}}>−{mNeg} Wrong</span>
+            <span style={{color:'#6b7280'}}>0 Skipped/NA</span>
           </div>
 
         </div>
       )}
 
-      {/* ══════════ REVIEW ══════════ */}
+      {/* ══ REVIEW ════════════════════════════════════════════════════════════ */}
       {tab==='review'&&(
-        <div className="review-shell">
-
-          {/* Subject tabs */}
-          <div className="rev-subj-bar">
+        <div className="rev-shell">
+          {/* Subject bar */}
+          <div className="rev-sbar">
             {subjects.map(s=>{
-              const sc=getSC(s), st=ms(getSubjQs(s)), isA=activeSubj===s
+              const sc=getSC(s), st=ms(getSubjQsArr(s)), isA=activeSubj===s
               return(
                 <button key={s} className={`rsb${isA?' on':''}`}
-                  style={isA?{background:sc.grd,color:'white',borderColor:'transparent',boxShadow:`0 4px 14px ${sc.bg}55`}:{color:sc.bg,borderColor:sc.bg+'44'}}
+                  style={isA?{background:sc.grd,color:'white',borderColor:'transparent'}:{color:sc.bg,borderColor:sc.bg+'44'}}
                   onClick={()=>switchSubj(s)}>
-                  <span className="rsb-em">{sc.emoji}</span>
-                  <span className="rsb-lb">{sc.label}</span>
+                  <span className="rsb-lbl">{sc.label}</span>
                   <span className="rsb-name">{s}</span>
-                  <span className="rsb-cnt" style={isA?{background:'rgba(255,255,255,.22)'}:{background:sc.light,color:sc.bg}}>
-                    {st.cor}/{st.total}
-                  </span>
+                  <span className="rsb-cnt" style={isA?{background:'rgba(255,255,255,.22)'}:{background:sc.light,color:sc.bg}}>{st.cor}/{st.total}</span>
                 </button>
               )
             })}
@@ -424,31 +498,26 @@ export default function Analyser() {
           <div className="rev-body">
             {/* Left nav */}
             <div className="rev-nav">
-              <div className="rn-hdr">Questions <span className="rn-cnt">{filteredQs.length}/{subjQs.length}</span></div>
-              {/* Filter pills */}
+              <div className="rn-hdr">Questions <span style={{color:'#1565c0',fontWeight:500}}>{filteredQs.length}/{subjQs.length}</span></div>
               <div className="rn-filters">
-                {[['all','All',null],['correct','✓ Correct','#2e7d32'],['wrong','✗ Wrong','#c62828'],['skipped','↩ Skipped','#e65100'],['unattempted','— NA','#546e7a']].map(([m,l,c])=>(
+                {[['all','All'],['correct','Correct'],['wrong','Wrong'],['skipped','Skipped'],['unattempted','Not Att.']].map(([m,l])=>(
                   <button key={m} className={`rf${filter===m?' on':''}`}
-                    style={filter===m&&c?{background:c,color:'white',borderColor:c}:filter===m?{background:'#1a237e',color:'white',borderColor:'#1a237e'}:{}}
+                    style={filter===m?{background:m==='all'?'#1a237e':DOT_BG[m]||'#1a237e',color:'white',borderColor:'transparent'}:{}}
                     onClick={()=>{setFilter(m);setCurQ(0)}}>{l}</button>
                 ))}
               </div>
-              {/* Dot grid */}
               <div className="rn-dots">
                 {filteredQs.map((q,i)=>(
-                  <div key={i} className={`rn-dot${i===curQ?' cur':''}`}
-                    style={{background:i===curQ?'#1a237e':DOT_BG[q.result]||'#90a4ae',
-                      boxShadow:i===curQ?'0 0 0 2.5px white,0 0 0 4.5px #1a237e':''}}
-                    onClick={()=>setCurQ(i)}>
-                    {q.qnum||(subjQs.indexOf(q)+1)}
-                  </div>
+                  <div key={i} title={`Q${q.qnum||i+1}`}
+                    className={`rn-dot${i===curQ?' cur':''}`}
+                    style={{background:i===curQ?'#1a237e':DOT_BG[q.result],boxShadow:i===curQ?'0 0 0 2px white,0 0 0 4px #1a237e':''}}
+                    onClick={()=>setCurQ(i)}>{q.qnum||(subjQs.indexOf(q)+1)}</div>
                 ))}
-                {!filteredQs.length&&<div style={{color:'#999',fontSize:'.74rem',gridColumn:'1/-1',textAlign:'center',paddingTop:16}}>No questions</div>}
+                {!filteredQs.length&&<div style={{color:'#9ca3af',fontSize:'.72rem',gridColumn:'1/-1',textAlign:'center',paddingTop:16}}>No questions</div>}
               </div>
-              {/* Legend */}
               <div className="rn-legend">
                 {Object.entries(DOT_BG).map(([k,c])=>(
-                  <div key={k} className="rn-leg"><div className="rn-leg-dot" style={{background:c}}/><span>{RES[k]?.label}</span></div>
+                  <div key={k} className="rn-leg"><div style={{width:10,height:10,borderRadius:3,background:c,flexShrink:0}}/><span>{RES[k]?.label}</span></div>
                 ))}
               </div>
             </div>
@@ -456,40 +525,37 @@ export default function Analyser() {
             {/* Question panel */}
             <div className="rev-qpanel">
               {!curQ2?(
-                <div className="rq-empty">
-                  <div style={{fontSize:'2.5rem',marginBottom:12}}>🔍</div>
-                  <div>Select a question to review</div>
-                </div>
+                <div className="rq-empty">Select a question from the left panel</div>
               ):(
                 <>
-                  {/* Q header */}
                   <div className="rq-hdr">
                     <div className="rq-hl">
                       <span className="rq-num">Q{curQ2.qnum||(subjQs.indexOf(curQ2)+1)}</span>
                       {curQ2.subject&&(()=>{const sc=getSC(curQ2.subject);return(
-                        <span className="rq-subj" style={{background:sc.light,color:sc.bg,border:`1px solid ${sc.dot}55`}}>{sc.emoji} {curQ2.subject}</span>
+                        <span className="rq-subj" style={{background:sc.light,color:sc.bg,border:`1px solid ${sc.dot}55`}}>{sc.label} · {curQ2.subject}</span>
                       )})()}
                       <span className={`rq-type ${curQ2.type==='INTEGER'?'int':'mcq'}`}>{curQ2.type==='INTEGER'?'Integer':'MCQ'}</span>
                     </div>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <button className="rq-bm" onClick={()=>openBmModal(curQ2)} title="Bookmark">🔖</button>
-                      <span className="rq-res-badge" style={{background:RES[curQ2.result]?.bg,color:RES[curQ2.result]?.color,border:`1px solid ${RES[curQ2.result]?.border}`}}>
+                      <button className="rq-bm" onClick={()=>openBmModal(curQ2)} title="Bookmark this question">{Ic.bookmark}</button>
+                      <span className="rq-badge" style={{background:RES[curQ2.result]?.bg,color:RES[curQ2.result]?.color,border:`1px solid ${RES[curQ2.result]?.border}`}}>
+                        {curQ2.result==='correct'?Ic.correct:curQ2.result==='wrong'?Ic.wrong:curQ2.result==='skipped'?Ic.skip:Ic.na}
                         {RES[curQ2.result]?.label}
                       </span>
                     </div>
                   </div>
 
-                  {/* Q content - image always first, then options */}
-                  <div className="rq-content">
+                  {/* Content — image always first, then options */}
+                  <div className="rq-body">
                     {curQ2.images?.length>0&&(
                       <div className="rq-imgs">{curQ2.images.map((img,i)=><img key={i} src={`data:image/png;base64,${img}`} alt="" style={{maxWidth:'100%',display:'block',margin:'0 auto 8px',borderRadius:8}}/>)}</div>
                     )}
-                    {!curQ2.images?.length&&(
+                    {!curQ2.images?.length&&curQ2.text&&(
                       <div className="rq-text" dangerouslySetInnerHTML={{__html:(curQ2.text||'').replace(/\n/g,'<br/>')}}/>
                     )}
                   </div>
 
-                  {/* Options always show below */}
+                  {/* Options always show */}
                   {curQ2.type==='MCQ'&&curQ2.opts&&(
                     <div className="rq-opts">
                       {['A','B','C','D'].map((lbl,i)=>{
@@ -497,12 +563,12 @@ export default function Analyser() {
                         const isYrs=lbl===(curQ2.yourAnswer||'').toUpperCase().trim()
                         return(
                           <div key={lbl} className={`rq-opt${isCor?' cor':isYrs&&!isCor?' wrg':''}`}>
-                            <div className="rq-opt-lbl">{lbl}</div>
-                            <div className="rq-opt-text">{curQ2.opts[i]||`Option ${lbl}`}</div>
-                            <div className="rq-opt-tags">
-                              {isCor&&isYrs&&<span className="rqt green">✓ Your Ans</span>}
-                              {isCor&&!isYrs&&<span className="rqt green">✓ Correct</span>}
-                              {isYrs&&!isCor&&<span className="rqt red">✗ Your Ans</span>}
+                            <div className="rq-lbl">{lbl}</div>
+                            <div className="rq-otext">{curQ2.opts[i]||`Option ${lbl}`}</div>
+                            <div className="rq-tags">
+                              {isCor&&isYrs&&<span className="rqt green">{Ic.correct} Your Answer · Correct</span>}
+                              {isCor&&!isYrs&&<span className="rqt green">{Ic.correct} Correct Answer</span>}
+                              {isYrs&&!isCor&&<span className="rqt red">{Ic.wrong} Your Answer</span>}
                             </div>
                           </div>
                         )
@@ -512,16 +578,15 @@ export default function Analyser() {
 
                   {curQ2.type==='INTEGER'&&(
                     <div className="rq-int">
-                      <div className="rq-int-row"><span className="rq-int-lbl">Your Answer</span><span className="rq-int-val" style={{color:curQ2.result==='correct'?'#2e7d32':'#c62828',background:curQ2.result==='correct'?'#e8f5e9':'#ffebee'}}>{curQ2.yourAnswer||'—'}</span></div>
-                      <div className="rq-int-row"><span className="rq-int-lbl">Correct Answer</span><span className="rq-int-val" style={{color:'#2e7d32',background:'#e8f5e9'}}>{curQ2.correctAnswer}</span></div>
+                      <div className="rq-int-row"><span>Your Answer</span><b style={{color:curQ2.result==='correct'?'#2e7d32':'#c62828',background:curQ2.result==='correct'?'#e8f5e9':'#ffebee',padding:'4px 16px',borderRadius:7}}>{curQ2.yourAnswer||'—'}</b></div>
+                      <div className="rq-int-row"><span>Correct Answer</span><b style={{color:'#2e7d32',background:'#e8f5e9',padding:'4px 16px',borderRadius:7}}>{curQ2.correctAnswer}</b></div>
                     </div>
                   )}
 
-                  {/* Nav */}
                   <div className="rq-nav">
-                    <button className="rqn-btn" disabled={curQ===0} onClick={()=>setCurQ(c=>c-1)}>← Prev</button>
+                    <button className="rqn" disabled={curQ===0} onClick={()=>setCurQ(c=>c-1)}>← Prev</button>
                     <span className="rqn-cnt">{curQ+1} / {filteredQs.length}</span>
-                    <button className="rqn-btn primary" disabled={curQ>=filteredQs.length-1} onClick={()=>setCurQ(c=>c+1)}>Next →</button>
+                    <button className="rqn primary" disabled={curQ>=filteredQs.length-1} onClick={()=>setCurQ(c=>c+1)}>Next →</button>
                   </div>
                 </>
               )}
@@ -533,218 +598,164 @@ export default function Analyser() {
   )
 }
 
-const UPLOAD_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+const BASE_CSS = `
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#f0f4ff;font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center}
-.upload-page{width:100%;max-width:600px;margin:0 auto;padding:24px}
-.up-back{display:inline-block;color:#546e7a;font-size:.8rem;text-decoration:none;margin-bottom:24px;opacity:.8}
-.up-back:hover{opacity:1}
-.up-card{background:white;border-radius:20px;padding:44px 40px;box-shadow:0 8px 40px rgba(26,35,126,.1);text-align:center}
-.up-icon-wrap{width:80px;height:80px;background:linear-gradient(135deg,#1565c0,#6a1b9a);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 8px 24px rgba(21,101,192,.3)}
-.up-icon{font-size:2.2rem}
-.up-title{font-size:1.8rem;font-weight:900;color:#1a237e;letter-spacing:-1px;margin-bottom:8px}
-.up-sub{font-size:.88rem;color:#888;margin-bottom:28px}
-.up-drop{background:#f5f7ff;border:2.5px dashed #c5cae9;border-radius:16px;padding:40px 24px;cursor:pointer;transition:all .22s;margin-bottom:16px}
-.up-drop:hover,.up-drop.dragging{border-color:#1565c0;background:#e8eaf6}
-.up-drop-icon{font-size:2.4rem;margin-bottom:12px}
-.up-drop-title{font-size:.98rem;font-weight:700;color:#1a237e;margin-bottom:6px}
-.up-drop-sub{font-size:.78rem;color:#888;margin-bottom:18px}
-.up-browse-btn{background:linear-gradient(135deg,#1565c0,#6a1b9a);color:white;border:none;padding:11px 28px;border-radius:9px;font-weight:700;font-size:.84rem;cursor:pointer;box-shadow:0 4px 14px rgba(21,101,192,.3)}
-.up-err{background:#ffebee;border:1px solid #ef9a9a;color:#c62828;padding:10px 14px;border-radius:8px;font-size:.82rem;margin-bottom:12px;text-align:left}
-.up-how{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:20px}
-.up-how-step{display:flex;align-items:center;gap:7px;font-size:.76rem;color:#546e7a}
-.up-step-n{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#1565c0,#6a1b9a);color:white;font-size:.64rem;font-weight:800;display:flex;align-items:center;justify-content:center}
-.up-how-arr{color:#bbb;font-size:.9rem}
+body{background:#f0f4ff;color:#1a1a2e;font-family:'Inter',sans-serif;min-height:100vh}
+::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-thumb{background:#c5cae9;border-radius:3px}
+@keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 `
 
 const APP_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400&family=JetBrains+Mono:wght@400;500;700&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-body{background:#f0f2f8;font-family:'Inter',sans-serif;min-height:100vh;color:#1a1a2e}
-::-webkit-scrollbar{width:5px;height:5px}::-webkit-scrollbar-track{background:#f0f0f0}::-webkit-scrollbar-thumb{background:#c5cae9;border-radius:3px}
-@keyframes fadeIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-.fade{animation:fadeIn .35s ease both}
-
-/* Header */
-.hdr{background:#1a237e;height:56px;display:flex;align-items:center;padding:0 20px;gap:12px;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(26,35,126,.35)}
-.hdr-logo{color:white;text-decoration:none;font-size:1.05rem;font-weight:400;flex-shrink:0;display:flex;align-items:center;gap:8px}.hdr-logo b{font-weight:900;color:#fdd835}
-.hdr-mark{width:34px;height:34px;background:#fdd835;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;color:#1a237e;font-family:'JetBrains Mono',monospace}
-.hdr-tabs{display:flex;gap:4px;flex:1;justify-content:center}
-.hdr-tab{padding:7px 20px;border-radius:7px;border:none;background:transparent;color:rgba(255,255,255,.7);font-family:'Inter',sans-serif;font-weight:600;font-size:.82rem;cursor:pointer;transition:all .15s}
-.hdr-tab:hover{background:rgba(255,255,255,.1);color:white}
-.hdr-tab.on{background:rgba(255,255,255,.18);color:white}
-.hdr-right{display:flex;gap:8px;flex-shrink:0;align-items:center}
-.hdr-link{color:rgba(255,255,255,.8);font-size:.78rem;text-decoration:none;padding:6px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.25);transition:all .15s}
-.hdr-link:hover{background:rgba(255,255,255,.1);color:white}
-.hdr-new{background:rgba(255,255,255,.12);color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.25);padding:6px 14px;border-radius:6px;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer}
-.hdr-new:hover{background:rgba(255,255,255,.2)}
-
+/* Sub header */
+.sub-hdr{background:white;border-bottom:1px solid #e0e4ff;padding:0 24px;height:48px;display:flex;align-items:center;gap:16px;position:sticky;top:56px;z-index:90}
+.sub-hdr-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.sub-test-name{font-weight:700;font-size:.88rem;color:#1a237e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub-date{font-size:.7rem;color:#9ca3af;font-family:'JetBrains Mono',monospace;flex-shrink:0}
+.sub-tabs{display:flex;gap:4px;flex-shrink:0}
+.sub-tab{display:flex;align-items:center;gap:6px;padding:6px 16px;border-radius:7px;border:1.5px solid #e0e4ff;background:white;color:#6b7280;font-family:'Inter',sans-serif;font-weight:600;font-size:.8rem;cursor:pointer;transition:all .15s}
+.sub-tab:hover{border-color:#1a237e;color:#1a237e}
+.sub-tab.on{background:#1a237e;color:white;border-color:#1a237e}
+.sub-newfile{margin-left:auto;background:white;border:1.5px solid #e0e4ff;color:#6b7280;padding:6px 14px;border-radius:7px;font-family:'Inter',sans-serif;font-size:.78rem;cursor:pointer;flex-shrink:0}
+.sub-newfile:hover{border-color:#1a237e;color:#1a237e}
 /* Page */
-.page{max-width:1100px;margin:0 auto;padding:28px 20px 80px}
-
-/* Hero card */
-.hero-card{background:white;border-radius:18px;padding:28px 32px;display:flex;gap:32px;align-items:flex-start;margin-bottom:28px;box-shadow:0 4px 24px rgba(26,35,126,.1);border:1px solid #e0e4ff;flex-wrap:wrap}
-.hero-left{flex:1;min-width:220px}
-.hero-test-name{font-size:1.05rem;font-weight:800;color:#1a237e;margin-bottom:4px;letter-spacing:-.3px}
-.hero-date{font-size:.72rem;color:#999;font-family:'JetBrains Mono',monospace;margin-bottom:16px}
-.hero-score-wrap{display:flex;align-items:baseline;gap:4px;margin-bottom:4px}
-.hero-score{font-family:'JetBrains Mono',monospace;font-size:3.8rem;font-weight:900;letter-spacing:-3px;line-height:1}
-.hero-max{font-size:1.2rem;color:#999;font-weight:400}
-.hero-rating{font-size:.88rem;font-weight:800;margin-bottom:14px}
-.hero-chips{display:flex;gap:8px;flex-wrap:wrap}
-.hero-chip{font-size:.72rem;background:#f0f4ff;color:#3949ab;border:1px solid #c5cae9;padding:4px 12px;border-radius:20px;font-weight:600}
-.hero-right{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;flex-shrink:0}
-.hero-stat{border-radius:14px;padding:18px 16px;text-align:center;min-width:100px}
-.hero-stat-ic{font-size:1.1rem;margin-bottom:4px;font-weight:800}
-.hero-stat-n{font-family:'JetBrains Mono',monospace;font-size:2rem;font-weight:900;line-height:1;margin-bottom:4px}
-.hero-stat-l{font-size:.62rem;color:#666;text-transform:uppercase;letter-spacing:.5px}
-
-/* Section title */
-.sec-title{font-size:.65rem;font-weight:800;color:#546e7a;text-transform:uppercase;letter-spacing:3px;margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.sec-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,#c5cae9,transparent)}
-
+.ov-page{max-width:1120px;margin:0 auto;padding:24px 18px 80px;animation:fadeIn .3s ease}
+.sec-title{display:flex;align-items:center;gap:8px;font-size:.65rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:14px;font-family:'JetBrains Mono',monospace}
+.sec-title::after{content:'';flex:1;height:1px;background:#e0e4ff}
+/* Hero */
+.hero{background:white;border:1px solid #e0e4ff;border-radius:18px;padding:28px 32px;display:flex;gap:28px;align-items:flex-start;margin-bottom:24px;box-shadow:0 2px 16px rgba(26,35,126,.06);flex-wrap:wrap}
+.hero-score-col{flex:1;min-width:200px}
+.hero-label{font-size:.62rem;font-weight:800;color:#9ca3af;text-transform:uppercase;letter-spacing:2px;margin-bottom:6px;font-family:'JetBrains Mono',monospace}
+.hero-score{font-family:'JetBrains Mono',monospace;font-size:3.6rem;font-weight:900;letter-spacing:-2px;line-height:1}
+.hero-max{font-size:1.1rem;color:#9ca3af;font-weight:400}
+.hero-rating{font-size:.88rem;font-weight:800;margin:8px 0 14px}
+.hero-chips{display:flex;gap:7px;flex-wrap:wrap}
+.hchip{display:flex;align-items:center;gap:5px;font-size:.7rem;background:#f0f4ff;color:#3949ab;border:1px solid #c5cae9;padding:4px 11px;border-radius:20px;font-weight:600}
+.hero-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;flex-shrink:0}
+.hstat{border-radius:14px;padding:16px;text-align:center;min-width:96px}
+.hstat-ic{display:flex;justify-content:center;margin-bottom:6px}
+.hstat-n{font-family:'JetBrains Mono',monospace;font-size:1.9rem;font-weight:900;line-height:1;margin-bottom:4px}
+.hstat-l{font-size:.6rem;color:#6b7280;text-transform:uppercase;letter-spacing:.5px}
+/* Insights */
+.insights-card{background:white;border:1px solid #e0e4ff;border-radius:14px;padding:18px 20px;margin-bottom:24px}
+.ic-title{display:flex;align-items:center;gap:7px;font-size:.72rem;font-weight:800;color:#1a237e;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:14px;font-family:'JetBrains Mono',monospace}
+.ic-list{display:flex;flex-direction:column;gap:8px}
+.insight{display:flex;align-items:flex-start;gap:10px;font-size:.82rem;padding:8px 12px;border-radius:8px;line-height:1.5}
+.ins-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.ins-good{background:#e8f5e9;color:#2e7d32}.ins-good .ins-dot{background:#2e7d32}
+.ins-ok{background:#e3f2fd;color:#1565c0}.ins-ok .ins-dot{background:#1565c0}
+.ins-warn{background:#fff8e1;color:#e65100}.ins-warn .ins-dot{background:#e65100}
+.ins-bad{background:#ffebee;color:#c62828}.ins-bad .ins-dot{background:#c62828}
 /* Subject cards */
-.subj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:32px}
-.scard{background:white;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07);cursor:pointer;transition:all .2s;border:1px solid #e8eaf6}
-.scard:hover{transform:translateY(-4px);box-shadow:0 8px 32px rgba(0,0,0,.13)}
-.scard-top{padding:18px 18px 14px;display:flex;align-items:center;gap:12px;position:relative}
-.scard-emoji{font-size:1.6rem;flex-shrink:0}
-.scard-badge{font-size:.6rem;font-weight:800;color:rgba(255,255,255,.85);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;margin-bottom:2px}
-.scard-name{font-size:.82rem;font-weight:700;color:rgba(255,255,255,.9)}
-.scard-score-big{position:absolute;right:16px;top:50%;transform:translateY(-50%);font-family:'JetBrains Mono',monospace;font-size:1.5rem;font-weight:900}
+.scard-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px;margin-bottom:28px}
+.scard{background:white;border-radius:14px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06);cursor:pointer;transition:all .2s;border:1px solid #e8eaf6}
+.scard:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(0,0,0,.11)}
+.scard-top{padding:16px 18px;display:flex;align-items:center;justify-content:space-between}
+.scard-lbl{font-size:.6rem;font-weight:800;color:rgba(255,255,255,.75);font-family:'JetBrains Mono',monospace;letter-spacing:.5px;margin-bottom:2px}
+.scard-name{font-size:.85rem;font-weight:700;color:white}
+.scard-score{font-family:'JetBrains Mono',monospace;font-size:1.4rem;font-weight:900}
 .scard-body{padding:14px 16px 16px}
-.scard-bar-label{display:flex;justify-content:space-between;font-size:.72rem;color:#666;margin-bottom:6px}
-.scard-bar-track{height:6px;background:#f0f0f0;border-radius:99px;overflow:hidden;margin-bottom:14px}
-.scard-bar-fill{height:100%;border-radius:99px;transition:width .6s}
-.scard-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:14px}
-.scard-stat{text-align:center}
-.ss-n{display:block;font-family:'JetBrains Mono',monospace;font-size:1.05rem;font-weight:800}
-.ss-l{font-size:.58rem;color:#888;text-transform:uppercase}
-.scard-btn{width:100%;padding:9px;background:#f0f4ff;color:#1565c0;border:1.5px solid #c5cae9;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.76rem;cursor:pointer;transition:all .15s}
+.scard-bar-row{display:flex;justify-content:space-between;font-size:.72rem;color:#6b7280;margin-bottom:5px}
+.scard-track{height:5px;background:#f0f0f0;border-radius:99px;overflow:hidden;margin-bottom:12px}
+.scard-stats4{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:10px}
+.ss{display:flex;flex-direction:column;align-items:center;gap:2px}
+.ss span:first-child{font-family:'JetBrains Mono',monospace;font-size:.95rem}
+.ss span:last-child{font-size:.55rem;color:#9ca3af;text-transform:uppercase}
+.scard-meta{display:flex;gap:8px;font-size:.64rem;color:#9ca3af;margin-bottom:10px;flex-wrap:wrap}
+.scard-meta span{display:flex;align-items:center;gap:3px}
+.scard-btn{width:100%;padding:8px;background:#f0f4ff;color:#1565c0;border:1.5px solid #c5cae9;border-radius:7px;font-family:'Inter',sans-serif;font-weight:600;font-size:.76rem;cursor:pointer;transition:all .15s}
 .scard-btn:hover{background:#e8eaf6;border-color:#1565c0}
-
 /* Table */
-.table-wrap{background:white;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07);margin-bottom:20px;border:1px solid #e8eaf6;overflow-x:auto}
-.breakdown-table{width:100%;border-collapse:collapse;font-size:.82rem}
-.breakdown-table thead tr{background:#1a237e}
-.breakdown-table th{padding:12px 14px;text-align:left;font-size:.65rem;font-weight:800;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
-.tbody-row{border-bottom:1px solid #f0f0f0;transition:background .12s}
-.tbody-row:hover{background:#f5f7ff}
-.total-row{background:#f5f7ff;border-top:2px solid #c5cae9}
-.total-row td{padding:14px 14px;font-size:.84rem}
-.breakdown-table td{padding:12px 14px;vertical-align:middle}
-.td-subj{display:flex;align-items:center;gap:8px}
-.td-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
-.td-badge{font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:10px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
-.td-name{font-weight:600;font-size:.82rem;color:#1a237e}
-.td-score{font-family:'JetBrains Mono',monospace;font-weight:800;font-size:.9rem}
-.td-cor{color:#2e7d32;font-weight:700;font-family:'JetBrains Mono',monospace}
-.td-wrg{color:#c62828;font-weight:700;font-family:'JetBrains Mono',monospace}
-.td-skp{color:#e65100;font-weight:700;font-family:'JetBrains Mono',monospace}
-.td-un{color:#546e7a;font-weight:700;font-family:'JetBrains Mono',monospace}
-.td-att{font-family:'JetBrains Mono',monospace;font-weight:700;color:#1a237e}
-.td-den{color:#bbb;font-weight:400}
-.td-acc-wrap{display:flex;align-items:center;gap:8px}
-.td-acc-bar{width:60px;height:5px;background:#e8eaf6;border-radius:99px;overflow:hidden;flex-shrink:0}
-.td-acc-pct{font-family:'JetBrains Mono',monospace;font-size:.74rem;font-weight:800;white-space:nowrap}
-.td-time{font-family:'JetBrains Mono',monospace;font-size:.72rem;color:#888}
-
-/* Marking info */
-.marking-info{display:flex;gap:16px;flex-wrap:wrap;font-size:.78rem;color:#546e7a;padding:12px 16px;background:white;border-radius:10px;border:1px solid #e8eaf6;margin-bottom:8px}
-.mi-item{display:flex;align-items:center;gap:6px}
-.mi-dot{width:12px;height:12px;border-radius:3px;flex-shrink:0}
-
+.tbl-wrap{background:white;border-radius:14px;overflow:hidden;border:1px solid #e0e4ff;margin-bottom:16px;overflow-x:auto;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+.tbl{width:100%;border-collapse:collapse;font-size:.8rem}
+.tbl thead tr{background:#1a237e}
+.tbl th{padding:11px 13px;text-align:left;font-size:.6rem;font-weight:800;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.8px;white-space:nowrap}
+.trow{border-bottom:1px solid #f0f0f0;transition:background .12s;cursor:pointer}
+.trow:hover{background:#f5f7ff}
+.trow-total{background:#f5f7ff;border-top:2px solid #c5cae9}
+.tbl td{padding:11px 13px;vertical-align:middle}
+.td-s{display:flex;align-items:center;gap:7px;font-weight:600}
+.tdbadge{font-size:.58rem;font-weight:800;padding:2px 6px;border-radius:8px;font-family:'JetBrains Mono',monospace;white-space:nowrap}
+.td-acc{display:flex;align-items:center;gap:7px}
+.td-bar{width:54px;height:4px;background:#e8eaf6;border-radius:99px;overflow:hidden;flex-shrink:0}
+/* Scheme */
+.scheme{display:flex;gap:14px;font-size:.78rem;padding:10px 16px;background:white;border-radius:10px;border:1px solid #e0e4ff;margin-top:8px;flex-wrap:wrap}
 /* Review */
-.review-shell{display:flex;flex-direction:column;height:calc(100vh - 56px);overflow:hidden}
-.rev-subj-bar{background:#f8f9ff;border-bottom:1px solid #e0e4ff;padding:8px 14px;display:flex;gap:6px;overflow-x:auto;flex-shrink:0}
-.rsb{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:10px;border:1.5px solid;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;white-space:nowrap;transition:all .18s;flex-shrink:0}
-.rsb-em{font-size:.9rem}
-.rsb-lb{font-family:'JetBrains Mono',monospace;font-size:.62rem;font-weight:800}
+.rev-shell{display:flex;flex-direction:column;height:calc(100vh - 104px)}
+.rev-sbar{background:#f8f9ff;border-bottom:1px solid #e0e4ff;padding:8px 14px;display:flex;gap:5px;overflow-x:auto;flex-shrink:0}
+.rsb{display:flex;align-items:center;gap:6px;padding:7px 13px;border-radius:9px;border:1.5px solid;background:transparent;cursor:pointer;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;white-space:nowrap;transition:all .18s;flex-shrink:0}
+.rsb-lbl{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:800}
 .rsb-cnt{font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:20px}
 .rev-body{display:flex;flex:1;overflow:hidden;min-height:0}
-
-/* Nav panel */
-.rev-nav{width:216px;flex-shrink:0;background:white;border-right:1px solid #e8eaf6;display:flex;flex-direction:column;overflow:hidden}
-.rn-hdr{padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:.6rem;font-weight:800;color:#546e7a;text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid #e8eaf6;display:flex;justify-content:space-between;align-items:center}
-.rn-cnt{color:#1565c0;font-weight:400}
-.rn-filters{padding:8px;display:flex;flex-direction:column;gap:3px;border-bottom:1px solid #e8eaf6}
-.rf{padding:7px 10px;border-radius:6px;font-size:.74rem;font-weight:600;cursor:pointer;border:1.5px solid #e8eaf6;background:transparent;color:#546e7a;font-family:'Inter',sans-serif;text-align:left;transition:all .12s}
+.rev-nav{width:210px;flex-shrink:0;background:white;border-right:1px solid #e0e4ff;display:flex;flex-direction:column;overflow:hidden}
+.rn-hdr{padding:10px 12px;font-size:.6rem;font-weight:800;color:#6b7280;text-transform:uppercase;letter-spacing:1.5px;border-bottom:1px solid #e0e4ff;display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace}
+.rn-filters{padding:8px;display:flex;flex-direction:column;gap:3px;border-bottom:1px solid #e0e4ff}
+.rf{padding:6px 10px;border-radius:6px;font-size:.73rem;font-weight:600;cursor:pointer;border:1.5px solid #e0e4ff;background:transparent;color:#6b7280;font-family:'Inter',sans-serif;text-align:left;transition:all .12s}
 .rf:hover{background:#f5f7ff;border-color:#c5cae9;color:#1a237e}
-.rn-dots{padding:10px;display:grid;grid-template-columns:repeat(5,1fr);gap:4px;overflow-y:auto;flex:1}
-.rn-dot{height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.56rem;font-weight:800;cursor:pointer;color:white;transition:all .1s}
+.rn-dots{padding:8px;display:grid;grid-template-columns:repeat(5,1fr);gap:3px;overflow-y:auto;flex:1}
+.rn-dot{height:27px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:.55rem;font-weight:800;cursor:pointer;color:white;transition:all .1s}
 .rn-dot:hover{transform:scale(1.1)}
 .rn-dot.cur{border-radius:6px}
-.rn-legend{padding:8px 10px;border-top:1px solid #e8eaf6}
-.rn-leg{display:flex;align-items:center;gap:5px;font-size:.62rem;color:#888;margin-bottom:4px}
-.rn-leg-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-
-/* Question panel — WHITE bg */
-.rev-qpanel{flex:1;background:white;overflow-y:auto;padding:22px 26px;display:flex;flex-direction:column;gap:14px}
-.rq-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#999;text-align:center;font-size:.86rem}
+.rn-legend{padding:8px 10px;border-top:1px solid #e0e4ff}
+.rn-leg{display:flex;align-items:center;gap:5px;font-size:.62rem;color:#9ca3af;margin-bottom:4px}
+/* Q panel */
+.rev-qpanel{flex:1;background:white;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:13px}
+.rq-empty{color:#9ca3af;font-size:.86rem;text-align:center;margin-top:60px}
 .rq-hdr{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
-.rq-hl{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.rq-num{font-family:'JetBrains Mono',monospace;font-size:.8rem;font-weight:700;background:#e8eaf6;border:1.5px solid #c5cae9;color:#1a237e;padding:4px 12px;border-radius:7px}
-.rq-subj{font-size:.7rem;font-weight:700;padding:4px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace}
-.rq-type{font-size:.62rem;font-weight:800;padding:3px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace}
+.rq-hl{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.rq-num{font-family:'JetBrains Mono',monospace;font-size:.78rem;font-weight:700;background:#e8eaf6;border:1.5px solid #c5cae9;color:#1a237e;padding:4px 11px;border-radius:7px}
+.rq-subj{font-size:.68rem;font-weight:700;padding:4px 10px;border-radius:20px;font-family:'JetBrains Mono',monospace}
+.rq-type{font-size:.6rem;font-weight:800;padding:3px 8px;border-radius:20px;font-family:'JetBrains Mono',monospace}
 .rq-type.mcq{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9}
 .rq-type.int{background:#fff8e1;color:#e65100;border:1px solid #ffe082}
-.rq-bm{background:#fff8e1;border:1px solid #ffe082;color:#f59e0b;padding:5px 10px;border-radius:6px;cursor:pointer;font-size:.9rem}
-.rq-bm:hover{background:#fef3c7;transform:scale(1.08)}
-.rq-res-badge{font-size:.76rem;font-weight:700;padding:5px 13px;border-radius:20px}
-.rq-content{background:#fafbff;border:1px solid #e8eaf6;border-radius:12px;padding:16px;min-height:70px}
+.rq-bm{background:#fff8e1;border:1px solid #ffe082;color:#e65100;padding:6px 10px;border-radius:6px;cursor:pointer;display:flex;align-items:center}
+.rq-bm:hover{background:#fef3c7}
+.rq-badge{display:flex;align-items:center;gap:5px;font-size:.74rem;font-weight:700;padding:5px 12px;border-radius:20px}
+.rq-body{background:#f8f9ff;border:1px solid #e8eaf6;border-radius:12px;padding:16px;min-height:60px}
 .rq-imgs{text-align:center}
-.rq-text{font-size:.92rem;line-height:1.9;color:#1a1a2e;white-space:pre-wrap;font-family:'Inter',sans-serif}
+.rq-text{font-size:.9rem;line-height:1.9;color:#1a1a2e;white-space:pre-wrap}
 .rq-opts{display:flex;flex-direction:column;gap:8px}
-.rq-opt{display:flex;align-items:flex-start;gap:10px;border:1.5px solid #e8eaf6;border-radius:10px;padding:11px 14px;background:white;transition:all .12s}
+.rq-opt{display:flex;align-items:flex-start;gap:10px;border:1.5px solid #e0e4ff;border-radius:10px;padding:11px 13px;background:white;transition:all .12s}
 .rq-opt.cor{border-color:#2e7d32!important;background:#e8f5e9!important}
 .rq-opt.wrg{border-color:#c62828!important;background:#ffebee!important}
-.rq-opt-lbl{width:28px;height:28px;border-radius:7px;background:#e8eaf6;border:1.5px solid #c5cae9;color:#1a237e;font-family:'JetBrains Mono',monospace;font-size:.72rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.rq-opt.cor .rq-opt-lbl{background:#2e7d32;border-color:#2e7d32;color:white}
-.rq-opt.wrg .rq-opt-lbl{background:#c62828;border-color:#c62828;color:white}
-.rq-opt-text{flex:1;font-size:.88rem;color:#1a1a2e;line-height:1.65;padding-top:2px}
-.rq-opt-tags{display:flex;flex-direction:column;gap:3px;align-items:flex-end;padding-top:2px;flex-shrink:0}
-.rqt{font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:8px;white-space:nowrap}
+.rq-lbl{width:27px;height:27px;border-radius:7px;background:#e8eaf6;border:1.5px solid #c5cae9;color:#1a237e;font-family:'JetBrains Mono',monospace;font-size:.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.rq-opt.cor .rq-lbl{background:#2e7d32;border-color:#2e7d32;color:white}
+.rq-opt.wrg .rq-lbl{background:#c62828;border-color:#c62828;color:white}
+.rq-otext{flex:1;font-size:.88rem;color:#1a1a2e;line-height:1.6;padding-top:2px}
+.rq-tags{display:flex;flex-direction:column;gap:3px;align-items:flex-end;flex-shrink:0;padding-top:2px}
+.rqt{display:flex;align-items:center;gap:4px;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:8px;white-space:nowrap}
 .rqt.green{background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7}
 .rqt.red{background:#ffebee;color:#c62828;border:1px solid #ef9a9a}
-.rq-int{background:#fafbff;border-radius:10px;overflow:hidden;border:1px solid #e8eaf6}
-.rq-int-row{display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid #eee}
+.rq-int{background:#f8f9ff;border-radius:10px;overflow:hidden;border:1px solid #e0e4ff}
+.rq-int-row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #eee;font-size:.82rem;color:#6b7280}
 .rq-int-row:last-child{border-bottom:none}
-.rq-int-lbl{font-size:.78rem;color:#666;flex:1}
-.rq-int-val{font-family:'JetBrains Mono',monospace;font-size:1.1rem;font-weight:800;padding:5px 16px;border-radius:7px}
 .rq-nav{display:flex;align-items:center;justify-content:space-between;border-top:1px solid #f0f0f0;padding-top:12px;margin-top:auto}
-.rqn-btn{padding:9px 22px;border-radius:8px;border:1.5px solid #c5cae9;background:white;color:#1a237e;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .15s}
-.rqn-btn:hover:not(:disabled){background:#e8eaf6;border-color:#1a237e}
-.rqn-btn.primary{background:#1a237e;color:white;border-color:#1a237e;box-shadow:0 4px 14px rgba(26,35,126,.25)}
-.rqn-btn.primary:hover:not(:disabled){background:#283593}
-.rqn-btn:disabled{opacity:.3;cursor:not-allowed}
-.rqn-cnt{font-family:'JetBrains Mono',monospace;font-size:.84rem;color:#546e7a;font-weight:700}
-
+.rqn{padding:9px 22px;border-radius:8px;border:1.5px solid #e0e4ff;background:white;color:#1a237e;font-family:'Inter',sans-serif;font-weight:700;font-size:.8rem;cursor:pointer;transition:all .15s}
+.rqn:hover:not(:disabled){background:#e8eaf6;border-color:#1a237e}
+.rqn.primary{background:#1a237e;color:white;border-color:#1a237e}
+.rqn.primary:hover:not(:disabled){background:#283593}
+.rqn:disabled{opacity:.3;cursor:not-allowed}
+.rqn-cnt{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:#6b7280;font-weight:700}
 /* Bookmark modal */
-.bm-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
-.bm-modal{background:white;border-radius:16px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
-.bm-done{text-align:center;font-size:1.1rem;font-weight:700;color:#2e7d32;padding:8px 0}
-.bm-modal-ttl{font-weight:800;font-size:.95rem;color:#1a237e;margin-bottom:14px}
-.bm-nb-list{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;max-height:180px;overflow-y:auto}
-.bm-nb-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border:1.5px solid #e8eaf6;border-radius:8px;cursor:pointer;transition:all .12s;font-size:.84rem}
-.bm-nb-item:hover{border-color:#1a237e;background:#f5f7ff}
-.bm-nb-item.sel{border-color:#1a237e;background:#e8eaf6;font-weight:600}
-.bm-cnt{font-size:.65rem;color:#888;font-family:'JetBrains Mono',monospace}
-.bm-create{background:none;border:1.5px dashed #c5cae9;color:#1a237e;padding:8px;border-radius:8px;width:100%;font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:12px;font-family:'Inter',sans-serif}
-.bm-create:hover{background:#f5f7ff}
-.bm-inp{width:100%;border:1.5px solid #c5cae9;border-radius:8px;padding:9px 12px;font-size:.84rem;outline:none;font-family:'Inter',sans-serif;margin-bottom:12px}
+.bm-ov{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)}
+.bm-box{background:white;border-radius:16px;padding:24px;width:100%;max-width:360px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.bm-done{text-align:center;font-weight:700;color:#2e7d32;padding:8px 0;font-size:1.05rem}
+.bm-ttl{font-weight:800;font-size:.92rem;color:#1a237e;margin-bottom:14px}
+.bm-list{display:flex;flex-direction:column;gap:5px;margin-bottom:12px;max-height:180px;overflow-y:auto}
+.bm-item{display:flex;justify-content:space-between;align-items:center;padding:9px 12px;border:1.5px solid #e0e4ff;border-radius:8px;cursor:pointer;transition:all .12s;font-size:.84rem}
+.bm-item:hover{border-color:#1a237e;background:#f5f7ff}
+.bm-item.sel{border-color:#1a237e;background:#e8eaf6;font-weight:700}
+.bm-cnt{font-size:.65rem;color:#9ca3af;font-family:'JetBrains Mono',monospace}
+.bm-new{background:none;border:1.5px dashed #c5cae9;color:#1a237e;padding:8px;border-radius:8px;width:100%;font-size:.8rem;font-weight:600;cursor:pointer;margin-bottom:12px;font-family:'Inter',sans-serif}
+.bm-inp{width:100%;border:1.5px solid #c5cae9;border-radius:8px;padding:9px 12px;font-size:.84rem;outline:none;font-family:'Inter',sans-serif;margin-bottom:12px;display:block}
 .bm-inp:focus{border-color:#1a237e}
-.bm-actions{display:flex;gap:8px}
-.bm-save{flex:1;background:#1a237e;color:white;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:.84rem;cursor:pointer}
+.bm-acts{display:flex;gap:8px}
+.bm-save{flex:1;background:#1a237e;color:white;border:none;padding:10px;border-radius:8px;font-weight:700;font-size:.84rem;cursor:pointer;font-family:'Inter',sans-serif}
 .bm-save:disabled{background:#9e9e9e;cursor:not-allowed}
-.bm-cancel{padding:10px 16px;border-radius:8px;border:1px solid #e0e0e0;background:white;font-size:.84rem;cursor:pointer}
-
+.bm-cancel{padding:10px 16px;border-radius:8px;border:1px solid #e0e0e0;background:white;font-size:.84rem;cursor:pointer;font-family:'Inter',sans-serif}
 @media(max-width:768px){
-  .hero-card{flex-direction:column}
-  .hero-right{width:100%;grid-template-columns:repeat(4,1fr)}
-  .rev-body{flex-direction:column}
-  .rev-nav{width:100%;max-height:200px;border-right:none;border-bottom:1px solid #e8eaf6}
+  .hero{flex-direction:column}.hero-stats{width:100%;grid-template-columns:repeat(4,1fr)}
+  .rev-body{flex-direction:column}.rev-nav{width:100%;max-height:200px;border-right:none;border-bottom:1px solid #e0e4ff}
   .rn-dots{grid-template-columns:repeat(8,1fr)}
-  .subj-grid{grid-template-columns:1fr}
+  .sub-hdr{flex-wrap:wrap;height:auto;padding:8px 14px;gap:8px;top:56px}
 }
 `
