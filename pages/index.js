@@ -82,7 +82,8 @@ export default function TestZyro() {
   const [uploadMsg, setUploadMsg]   = useState('')
   const [resumeData, setResumeData] = useState(null)
   const [cbtLoading, setCbtLoading] = useState(false)
-  const [attempts, setAttempts]     = useState([]) // past test attempts
+  const [attempts, setAttempts]     = useState([])
+  const [activeFolder, setActiveFolder] = useState(null)
 
   const timerRef  = useRef(null)
   const startRef  = useRef(null)
@@ -452,7 +453,143 @@ export default function TestZyro() {
     </div>)
   }
 
-  const isBitsatTest=isBITSAT(cfg.subject||'')
+  // ── Sidebar renderer (folders only) ──────────────────────────────────────
+  const renderSidebar = (tr, prefix='') => {
+    if (!tr) return null
+    return <>
+      {Object.entries(tr.folders||{}).map(([name, sub]) => {
+        if (!countAll(sub)) return null
+        const key = prefix+name
+        const cnt = countAll(sub)
+        return (
+          <div key={key}>
+            <button className={`lib-folder-item${activeFolder===key?' on':''}`}
+              onClick={()=>setActiveFolder(activeFolder===key?null:key)}>
+              <span style={{flex:1}}>{name}</span>
+              <span className="lib-folder-cnt">{cnt}</span>
+            </button>
+            {/* Sub-folders */}
+            {Object.keys(sub.folders||{}).length>0 && (
+              <div style={{paddingLeft:12}}>
+                {renderSidebar(sub, key+'/')}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </>
+  }
+
+  // ── Collect all tests for a folder path ──────────────────────────────────
+  const getTestsForFolder = (tr, targetKey, prefix='') => {
+    if (!tr) return []
+    let tests = []
+    for (const [name, sub] of Object.entries(tr.folders||{})) {
+      const key = prefix+name
+      if (key === targetKey) {
+        // Collect all tests in this folder recursively
+        const collectAll = (node) => {
+          let t = [...(node.tests||[])]
+          Object.values(node.folders||{}).forEach(f => t = t.concat(collectAll(f)))
+          return t
+        }
+        return collectAll(sub)
+      }
+      // Check sub-folders
+      const found = getTestsForFolder(sub, targetKey, key+'/')
+      if (found.length > 0) return found
+    }
+    return tests
+  }
+
+  // ── Test row component (list style like screenshot) ───────────────────────
+  const TestRow = ({ t, ci }) => {
+    const PALETTE=['#1a237e','#1b5e20','#b71c1c','#4a148c','#e65100','#006064','#37474f']
+    const accent = t.accentColor||PALETTE[ci%PALETTE.length]
+    const att = attempts.find(a=>a.testId===t.id||a.testId===t.path)
+    return (
+      <div className={`trow-card${cbtLoading?' trow-dim':''}`}>
+        <div className="trow-left">
+          <div className="trow-status-dot" style={{background: att?'#22c55e':'#d1d5db'}}/>
+          <div>
+            <div className="trow-title">{t.title}</div>
+            <div className="trow-meta">
+              {t.subject||'BITSAT'} · {t.questionCount||t.questions?.length||'?'} Questions · +{t.mCor||3}/−{t.mNeg||1} · {t.dur||180} min
+              {t.hasBonus && <span className="trow-bonus">Bonus</span>}
+            </div>
+            {att && (
+              <div className="trow-att-row">
+                <span className="trow-att-score" style={{color:att.score>=0?'#2e7d32':'#c62828'}}>Score: {att.score}/{att.maxScore}</span>
+                <span className="trow-att-acc">· {att.accuracy}% accuracy</span>
+                <span className="trow-att-date">· {new Date(att.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="trow-actions">
+          {att && <>
+            <button className="trow-btn outline" onClick={async()=>{
+              if(cbtLoading)return
+              try{
+                const tp=att.testPath||att.testId
+                const tiny={testTitle:att.testTitle,subject:att.subject,date:att.date,score:att.score,maxScore:att.maxScore,accuracy:att.accuracy,correct:att.correct,wrong:att.wrong,skipped:att.skipped,unattempted:att.unattempted,duration:att.duration,marksCorrect:att.marksCorrect,marksWrong:att.marksWrong,subjStats:att.subjStats,answers:att.questions?.map(q=>({yourAnswer:q.yourAnswer,result:q.result,correctAnswer:q.correctAnswer}))}
+                sessionStorage.setItem('tz_analyse',JSON.stringify(tiny))
+                window.location.href='/analyser?src=auto&tp='+encodeURIComponent(tp||'')
+              }catch(e){alert('Could not load: '+e.message)}
+            }}>View Analysis</button>
+            <button className="trow-btn outline" onClick={()=>{deleteAttempt(att.id);startFromTree(t.path)}}>Reattempt</button>
+          </>}
+          <button className="trow-btn primary" style={{background:cbtLoading?'#9e9e9e':accent}} onClick={()=>!cbtLoading&&startFromTree(t.path)} disabled={cbtLoading}>
+            {cbtLoading?'Loading…':'Start Test'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Main content area ─────────────────────────────────────────────────────
+  const renderMainContent = () => {
+    if (!activeFolder) {
+      // Show all tests flat or intro
+      const allTests = []
+      const collect = (tr) => { (tr.tests||[]).forEach(t=>allTests.push(t)); Object.values(tr.folders||{}).forEach(collect) }
+      collect(tree)
+      const filtered = allTests.filter(filt)
+      if (!filtered.length && !treeLoad) return (
+        <div className="lib-empty">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#c5cae9" strokeWidth="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          <div>Select a category from the left panel</div>
+        </div>
+      )
+      return <div className="trow-list">{filtered.map((t,i)=><TestRow key={t.path||t.id} t={t} ci={i}/>)}</div>
+    }
+    if (activeFolder.startsWith('saved:')) {
+      const tid = activeFolder.replace('saved:','')
+      const t = savedTests.find(s=>s.id===tid)
+      if (!t) return null
+      return <div className="trow-list"><TestRow t={t} ci={0}/></div>
+    }
+    const tests = getTestsForFolder(tree, activeFolder).filter(filt)
+    const folderName = activeFolder.split('/').pop()
+    return (
+      <div>
+        <div className="lib-main-header">
+          <h2 className="lib-main-title">{folderName}</h2>
+          <div className="lib-main-filters">
+            <div className="lib-search-wrap" style={{position:'relative',display:'inline-block'}}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{position:'absolute',left:9,top:'50%',transform:'translateY(-50%)',color:'#9ca3af'}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input className="lib-search" style={{paddingLeft:28}} placeholder="Search tests…" value={search} onChange={e=>setSearch(e.target.value)}/>
+            </div>
+          </div>
+        </div>
+        {!tests.length
+          ? <div className="lib-empty"><div>No tests found</div></div>
+          : <div className="trow-list">{tests.map((t,i)=><TestRow key={t.path||t.id} t={t} ci={i}/>)}</div>
+        }
+      </div>
+    )
+  }
+
   const subjGroups={}
   if(isBitsatTest){Qs.forEach((q2,i)=>{const s=q2.subject||'Other';if(!subjGroups[s])subjGroups[s]=[];subjGroups[s].push(i)})}
   const navSubjects=isBitsatTest?BITSAT_SUBJECTS.filter(s=>subjGroups[s]?.length>0):[]
@@ -540,100 +677,87 @@ export default function TestZyro() {
       </header>
 
       {page==='library' && (
-        <div className="wrap anim">
-          {uploadMsg && <div className="flash-msg">{uploadMsg}</div>}
-
-          {resumeData && (
-            <div className="resume-banner">
-              <div className="resume-banner-left">
-                <div className="resume-icon-wrap">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="10 15 15 12 10 9 10 15"/></svg>
-                </div>
-                <div>
-                  <div className="resume-title">Unfinished Test Found</div>
-                  <div className="resume-meta">
-                    <strong>{resumeData.cfg?.title}</strong> · {resumeData.ans?.filter(a=>a&&a!=='skip').length||0} answered · {fmt(Math.max(0,(resumeData.cfg?.dur*60||0)-resumeData.elapsed))} remaining · Saved {Math.round((Date.now()-resumeData.savedAt)/60000)} min ago
-                  </div>
-                </div>
+        <div className="lib-shell anim">
+          {/* Left Sidebar */}
+          <div className="lib-sidebar">
+            <div className="lib-sidebar-top">
+              <div className="lib-search-wrap">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'#9ca3af'}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input className="lib-search" placeholder="Search tests…" value={search} onChange={e=>setSearch(e.target.value)}/>
               </div>
-              <div className="resume-banner-right">
-                <button className="resume-btn" onClick={()=>resumeTest(resumeData)}>Resume Test</button>
-                <button className="discard-btn" onClick={discardResume}>Discard</button>
-              </div>
-            </div>
-          )}
-
-          {/* Stats bar */}
-          <div className="stats-bar">
-            <div className="stat-item">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-              <span><strong>{myTestsGiven}</strong> test{myTestsGiven!==1?'s':''} given by you</span>
-            </div>
-            {globalTests > 0 && <>
-              <div className="stat-divider"/>
-              <div className="stat-item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                <span><strong>{globalTests}</strong> total tests given on this device</span>
-              </div>
-            </>}
-          </div>
-
-          <div className="page-top">
-            <div>
-              <h2>Test Library</h2>
-              <p>BITSAT Full Mock Tests — Computer Based Test mode</p>
-            </div>
-            <button className="btn-sm" onClick={loadTree}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-              Refresh
-            </button>
-          </div>
-
-          {/* Typewriter Hero */}
-          <HeroTypewriter/>
-
-          {WHATS_NEW.length>0&&(
-            <div className="whats-new">
-              <div className="wn-title">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
-                What's New
-              </div>
-              <div className="wn-list">
-                {WHATS_NEW.map((item,i)=>(
-                  <div key={i} className="wn-item"><span className="wn-date">{item.date}</span><span className="wn-text">{item.text}</span></div>
+              <div className="lib-filters">
+                {[['all','All'],['Not Attempted','Not Attempted'],['Attempted','Attempted']].map(([v,l])=>(
+                  <button key={v} className={`lib-filter${filter===v?' on':''}`} onClick={()=>setFilter(v)}>{l}</button>
                 ))}
               </div>
             </div>
-          )}
+            <div className="lib-folder-list">
+              <div className="lib-section-label">MOCK TESTS</div>
+              {treeLoad?<div className="loading-txt" style={{padding:'10px 14px'}}>Loading…</div>:renderSidebar(tree)}
+              {savedTests.length>0&&<>
+                <div className="lib-section-label" style={{marginTop:12}}>UPLOADED TESTS</div>
+                {savedTests.map((t,i)=>(
+                  <button key={t.id} className={`lib-folder-item${activeFolder===('saved:'+t.id)?' on':''}`}
+                    onClick={()=>setActiveFolder('saved:'+t.id)}>
+                    {t.title}
+                  </button>
+                ))}
+              </>}
+            </div>
+            <div className="lib-sidebar-footer">
+              <button className="lib-upload-btn" onClick={()=>setPage('upload-json')}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                Upload JSON Test
+              </button>
+            </div>
+          </div>
 
-          <SecTitle>Available Tests</SecTitle>
-          {treeLoad?<div className="loading-txt">Loading…</div>:renderTree(tree)}
-          {savedTests.filter(filt).length>0&&<>
-            <SecTitle style={{marginTop:32}}>Saved Tests</SecTitle>
-            <div className="test-grid">{savedTests.filter(filt).map((t,i)=>(
-              <TestCard key={t.id} t={t} ci={i} globalLoading={cbtLoading}
-                onCBT={()=>startFromSaved(t)}
-                attempt={attempts.find(a=>a.testId===t.id)}
-                onAnalyse={async att=>{
-                  try {
-                    const tp = att.testPath || att.testId
-                    const tiny = {
-                      testTitle:att.testTitle, subject:att.subject, date:att.date,
-                      score:att.score, maxScore:att.maxScore, accuracy:att.accuracy,
-                      correct:att.correct, wrong:att.wrong, skipped:att.skipped, unattempted:att.unattempted,
-                      duration:att.duration, marksCorrect:att.marksCorrect, marksWrong:att.marksWrong,
-                      subjStats:att.subjStats,
-                      answers:att.questions?.map(q=>({yourAnswer:q.yourAnswer,result:q.result,correctAnswer:q.correctAnswer}))
-                    }
-                    sessionStorage.setItem('tz_analyse', JSON.stringify(tiny))
-                    window.location.href = '/analyser?src=auto&tp='+encodeURIComponent(tp||'')
-                  } catch(e) { alert('Could not load: '+e.message) }
-                }}
-                onReattempt={(att)=>{deleteAttempt(att.id);startFromSaved(t)}}
-                onDel={()=>{if(confirm('Delete?')){const l=savedTests.filter(x=>x.id!==t.id);setSavedTests(l);try{localStorage.setItem(SAVED_KEY,JSON.stringify(l))}catch(e){}}}}
-              />
-            ))}</div>
-          </>}
+          {/* Main content */}
+          <div className="lib-main">
+            {uploadMsg && <div className="flash-msg">{uploadMsg}</div>}
+
+            {resumeData && (
+              <div className="resume-banner">
+                <div className="resume-banner-left">
+                  <div className="resume-icon-wrap">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><polyline points="10 15 15 12 10 9 10 15"/></svg>
+                  </div>
+                  <div>
+                    <div className="resume-title">Unfinished Test</div>
+                    <div className="resume-meta"><strong>{resumeData.cfg?.title}</strong> · {resumeData.ans?.filter(a=>a&&a!=='skip').length||0} answered · {fmt(Math.max(0,(resumeData.cfg?.dur*60||0)-resumeData.elapsed))} left</div>
+                  </div>
+                </div>
+                <div className="resume-banner-right">
+                  <button className="resume-btn" onClick={()=>resumeTest(resumeData)}>Resume</button>
+                  <button className="discard-btn" onClick={discardResume}>Discard</button>
+                </div>
+              </div>
+            )}
+
+            {/* Hero typewriter */}
+            {!activeFolder && <HeroTypewriter/>}
+
+            {/* Stats */}
+            {!activeFolder && myTestsGiven > 0 && (
+              <div className="stats-bar">
+                <div className="stat-item">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                  <span><strong>{myTestsGiven}</strong> test{myTestsGiven!==1?'s':''} given by you</span>
+                </div>
+              </div>
+            )}
+
+            {/* What's new */}
+            {!activeFolder && WHATS_NEW.length>0&&(
+              <div className="whats-new">
+                <div className="wn-title"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>What's New</div>
+                <div className="wn-list">{WHATS_NEW.map((item,i)=>(<div key={i} className="wn-item"><span className="wn-date">{item.date}</span><span className="wn-text">{item.text}</span></div>))}</div>
+              </div>
+            )}
+
+            {/* Test list for selected folder */}
+            {renderMainContent()}
+          </div>
         </div>
       )}
 
@@ -714,14 +838,19 @@ export default function TestZyro() {
               {!q?.images?.length&&q?.pageRef==null&&(
                 <div className="qtext" dangerouslySetInnerHTML={{__html:(q?.text||'').replace(/\n/g,'<br/>')}}/>
               )}
-              {/* Options always show */}
+              {/* Options - only show text opts if they have real content (not just A/B/C/D) */}
               {q?.type==='MCQ'
-                ?<div className="opts">{['A','B','C','D'].map((lbl,i)=>(
-                  <div key={lbl} className={optCls(lbl)} onClick={()=>{if(!done&&!reviewing)setAnswer(lbl)}}>
-                    <span className="olbl">{lbl}</span>
-                    <span className="otext">{q.opts?.[i]||`Option ${lbl}`}</span>
-                  </div>
-                ))}</div>
+                ?<div className="opts">{['A','B','C','D'].map((lbl,i)=>{
+                  const optText = q.opts?.[i]||''
+                  // If option text is just a single letter or empty, don't show text (image has it)
+                  const hasRealText = optText.length > 1
+                  return(
+                    <div key={lbl} className={optCls(lbl)} onClick={()=>{if(!done&&!reviewing)setAnswer(lbl)}}>
+                      <span className="olbl">{lbl}</span>
+                      {hasRealText&&<span className="otext">{optText}</span>}
+                    </div>
+                  )
+                })}</div>
                 :<div className="int-section">
                   <div className="int-label">Enter numeric answer:</div>
                   <input className="int-inp" type="text" inputMode="decimal"
@@ -1005,6 +1134,50 @@ body{background:var(--bg,#f0f4ff);color:var(--text,#1a1a2e);font-family:'Inter',
 .dark-toggle:hover{background:rgba(255,255,255,.22)}
 /* Layout */
 .wrap{max-width:1060px;margin:0 auto;padding:24px 18px 80px}.narrow{max-width:800px}
+/* Sidebar library layout */
+.lib-shell{display:flex;height:calc(100vh - 56px);overflow:hidden;background:var(--bg,#f0f4ff)}
+.lib-sidebar{width:260px;flex-shrink:0;background:var(--surface,white);border-right:1px solid var(--border,#e0e4ff);display:flex;flex-direction:column;overflow:hidden}
+.lib-sidebar-top{padding:12px;border-bottom:1px solid var(--border,#e0e4ff)}
+.lib-search-wrap{position:relative;margin-bottom:8px}
+.lib-search{width:100%;padding:7px 10px 7px 30px;background:var(--surface2,#f5f7ff);border:1.5px solid var(--border,#e0e4ff);border-radius:8px;font-family:'Inter',sans-serif;font-size:.78rem;color:var(--text,#1a1a2e);outline:none;transition:border-color .15s}
+.lib-search:focus{border-color:#1a237e}
+.lib-filters{display:flex;gap:4px;flex-wrap:wrap}
+.lib-filter{padding:4px 10px;border-radius:20px;font-size:.68rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border,#e0e4ff);background:transparent;color:var(--muted,#6b7280);font-family:'Inter',sans-serif;transition:all .13s;white-space:nowrap}
+.lib-filter.on{background:#1a237e;color:white;border-color:#1a237e}
+.lib-folder-list{flex:1;overflow-y:auto;padding:8px 0}
+.lib-section-label{font-size:.58rem;font-weight:800;color:var(--muted,#9ca3af);text-transform:uppercase;letter-spacing:2px;padding:10px 14px 4px;font-family:'JetBrains Mono',monospace}
+.lib-folder-item{display:flex;align-items:center;width:100%;padding:8px 14px;background:transparent;border:none;cursor:pointer;font-family:'Inter',sans-serif;font-size:.82rem;font-weight:500;color:var(--text2,#374151);text-align:left;transition:all .13s;gap:6px}
+.lib-folder-item:hover{background:var(--surface2,#f5f7ff);color:#1a237e}
+.lib-folder-item.on{background:#e8eaf6;color:#1a237e;font-weight:700;border-left:3px solid #1a237e}
+.lib-folder-cnt{font-size:.62rem;font-family:'JetBrains Mono',monospace;color:var(--muted,#9ca3af);background:var(--surface2,#f0f0f0);padding:1px 6px;border-radius:10px;margin-left:auto}
+.lib-sidebar-footer{padding:10px 12px;border-top:1px solid var(--border,#e0e4ff)}
+.lib-upload-btn{display:flex;align-items:center;gap:7px;width:100%;padding:8px 12px;background:var(--surface2,#f5f7ff);border:1.5px dashed var(--border,#c5cae9);border-radius:8px;color:#1a237e;font-family:'Inter',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;transition:all .15s;justify-content:center}
+.lib-upload-btn:hover{background:#e8eaf6;border-color:#1a237e}
+/* Main content area */
+.lib-main{flex:1;overflow-y:auto;padding:20px 24px;display:flex;flex-direction:column;gap:16px}
+.lib-main-header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px}
+.lib-main-title{font-size:1.3rem;font-weight:800;color:var(--text,#1a1a2e);letter-spacing:-.3px}
+.lib-main-filters{display:flex;gap:8px;align-items:center}
+.lib-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:12px;color:var(--muted,#9ca3af);font-size:.86rem;padding:60px 0;text-align:center}
+/* Test rows (list style) */
+.trow-list{display:flex;flex-direction:column;gap:10px}
+.trow-card{background:var(--surface,white);border:1px solid var(--border,#e0e4ff);border-radius:12px;padding:16px 18px;display:flex;align-items:center;justify-content:space-between;gap:16px;transition:all .18s;flex-wrap:wrap}
+.trow-card:hover{border-color:#1a237e;box-shadow:0 4px 16px rgba(26,35,126,.08)}
+.trow-dim{opacity:.6;pointer-events:none}
+.trow-left{display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0}
+.trow-status-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.trow-title{font-weight:700;font-size:.92rem;color:var(--text,#1a1a2e);margin-bottom:4px}
+.trow-meta{font-size:.72rem;color:var(--muted,#6b7280);font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.trow-bonus{background:#fff3e0;color:#e65100;border:1px solid #ffcc80;padding:1px 7px;border-radius:10px;font-size:.6rem;font-weight:700}
+.trow-att-row{display:flex;align-items:center;gap:6px;margin-top:5px;font-size:.72rem;flex-wrap:wrap}
+.trow-att-score{font-weight:700;font-family:'JetBrains Mono',monospace}
+.trow-att-acc{color:var(--muted,#6b7280)}
+.trow-att-date{color:var(--muted,#9ca3af);font-family:'JetBrains Mono',monospace}
+.trow-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
+.trow-btn{padding:8px 16px;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
+.trow-btn.outline{background:transparent;border:1.5px solid var(--border,#e0e4ff);color:var(--text,#1a237e)}
+.trow-btn.outline:hover{border-color:#1a237e;background:#e8eaf6}
+.trow-btn.primary{border:none;color:white;box-shadow:0 3px 10px rgba(0,0,0,.15)}
 .anim{animation:up .3s ease both}
 /* Stats bar */
 .stats-bar{background:var(--surface,white);border:1px solid var(--border,#e0e4ff);border-radius:10px;padding:10px 18px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted,#666)}
@@ -1087,7 +1260,7 @@ body{background:var(--bg,#f0f4ff);color:var(--text,#1a1a2e);font-family:'Inter',
 .up-sub{font-size:.78rem;color:var(--muted,#888);margin-bottom:16px}
 .btn-primary{background:#1a237e;color:white;border:none;padding:10px 24px;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.84rem;cursor:pointer;display:inline-block}
 /* CBT */
-.cbt-app{display:flex;flex-direction:column;height:calc(100vh - 56px);overflow:hidden;background:white}
+.cbt-app{position:fixed;inset:0;display:flex;flex-direction:column;background:white;z-index:500}
 .cbt-top{background:#1a237e;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0}
 .cbt-top-left{display:flex;flex-direction:column;gap:2px}
 .cbt-test-title{font-weight:700;font-size:.92rem;color:white}

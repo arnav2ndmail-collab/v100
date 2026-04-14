@@ -555,8 +555,8 @@ export default function Analyser() {
                     )}
                   </div>
 
-                  {/* Options always show */}
-                  {curQ2.type==='MCQ'&&curQ2.opts&&(
+                  {/* Options always show below image - but only if opts have real text */}
+                  {curQ2.type==='MCQ'&&curQ2.opts&&curQ2.opts.some(o=>o&&o.length>1)&&(
                     <div className="rq-opts">
                       {['A','B','C','D'].map((lbl,i)=>{
                         const isCor=lbl===(curQ2.correctAnswer||'').toUpperCase().trim()
