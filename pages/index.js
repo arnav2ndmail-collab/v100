@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Head from 'next/head'
+import Nav from '../components/Nav'
 
 const pad = n => String(n).padStart(2,'0')
 const fmt = s => `${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`
@@ -504,14 +505,12 @@ export default function TestZyro() {
 
   // ── Test row component (list style like screenshot) ───────────────────────
   const TestRow = ({ t, ci }) => {
-    const PALETTE=['#1a237e','#1b5e20','#b71c1c','#4a148c','#e65100','#006064','#37474f']
-    const accent = t.accentColor||PALETTE[ci%PALETTE.length]
     const att = attempts.find(a=>a.testId===t.id||a.testId===t.path)
     return (
       <div className={`trow-card${cbtLoading?' trow-dim':''}`}>
         <div className="trow-left">
-          <div className="trow-status-dot" style={{background: att?'#22c55e':'#d1d5db'}}/>
-          <div>
+          <div className="trow-status-dot" style={{background: att?'#22c55e':'#e0e4ff', border: att?'none':'1.5px solid #c5cae9'}}/>
+          <div style={{flex:1,minWidth:0}}>
             <div className="trow-title">{t.title}</div>
             <div className="trow-meta">
               {t.subject||'BITSAT'} · {t.questionCount||t.questions?.length||'?'} Questions · +{t.mCor||3}/−{t.mNeg||1} · {t.dur||180} min
@@ -520,8 +519,10 @@ export default function TestZyro() {
             {att && (
               <div className="trow-att-row">
                 <span className="trow-att-score" style={{color:att.score>=0?'#2e7d32':'#c62828'}}>Score: {att.score}/{att.maxScore}</span>
-                <span className="trow-att-acc">· {att.accuracy}% accuracy</span>
-                <span className="trow-att-date">· {new Date(att.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>
+                <span className="trow-att-sep">·</span>
+                <span className="trow-att-acc">{att.accuracy}% accuracy</span>
+                <span className="trow-att-sep">·</span>
+                <span className="trow-att-date">{new Date(att.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span>
               </div>
             )}
           </div>
@@ -539,7 +540,7 @@ export default function TestZyro() {
             }}>View Analysis</button>
             <button className="trow-btn outline" onClick={()=>{deleteAttempt(att.id);startFromTree(t.path)}}>Reattempt</button>
           </>}
-          <button className="trow-btn primary" style={{background:cbtLoading?'#9e9e9e':accent}} onClick={()=>!cbtLoading&&startFromTree(t.path)} disabled={cbtLoading}>
+          <button className="trow-btn primary" onClick={()=>!cbtLoading&&startFromTree(t.path)} disabled={cbtLoading}>
             {cbtLoading?'Loading…':'Start Test'}
           </button>
         </div>
@@ -590,7 +591,6 @@ export default function TestZyro() {
     )
   }
 
-  const isBitsatTest = isBITSAT(cfg.subject)
   const subjGroups={}
   if(isBitsatTest){Qs.forEach((q2,i)=>{const s=q2.subject||'Other';if(!subjGroups[s])subjGroups[s]=[];subjGroups[s].push(i)})}
   const navSubjects=isBitsatTest?BITSAT_SUBJECTS.filter(s=>subjGroups[s]?.length>0):[]
@@ -601,18 +601,6 @@ export default function TestZyro() {
   const hasBonus     = bonusIndices.length>0
   const bonusUnlocked= mainIndices.length>0 && mainIndices.every(i=>ans[i]!==null&&ans[i]!==undefined)
   const inBonus      = bonusIndices.includes(cur)
-
-  const [darkMode, setDarkMode] = useState(false)
-  const toggleDark = () => {
-    const next = !darkMode
-    setDarkMode(next)
-    localStorage.setItem('tz_dark_mode', next?'dark':'light')
-    document.documentElement.setAttribute('data-theme', next?'dark':'')
-  }
-  useEffect(()=>{
-    const saved = localStorage.getItem('tz_dark_mode')
-    if(saved==='dark'){setDarkMode(true);document.documentElement.setAttribute('data-theme','dark')}
-  },[])
 
   // Stats - real data only
   const myTestsGiven = attempts.length
@@ -634,48 +622,11 @@ export default function TestZyro() {
       </Head>
       <style>{CSS}</style>
 
-      <header className="hdr">
-        <div className="logo" onClick={()=>setPage('library')}>
-          <div className="logo-mark">TZ</div>
-          <div className="logo-txt">Test<span>Zyro</span></div>
-        </div>
-        <nav className="nav">
-          <button className={`nb${page==='library'?' active':''}`} onClick={()=>setPage('library')}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-            Library
-          </button>
-          <button className={`nb${page==='upload-json'?' active':''}`} onClick={()=>setPage('upload-json')}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Upload
-          </button>
-          <a href="/analyser" className="nb">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-            Analyser
-          </a>
-          <a href="/solutions" className="nb">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Solutions
-          </a>
-          <a href="/bookmarks" className="nb">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-            Bookmarks
-          </a>
-          <a href="/migrate" className="nb">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>
-            Migrate
-          </a>
-          <a href="/admin" className="nb">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41M21 12h-2M5 12H3M12 21v-2M12 5V3"/></svg>
-            Admin
-          </a>
-        </nav>
-        <button className="dark-toggle" onClick={toggleDark} title={darkMode?'Light mode':'Dark mode'}>
-          {darkMode
-            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
-            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
-          }
-        </button>
-      </header>
+      <Nav active="Library" extraLinks={[
+        { label:'Upload JSON', onClick:()=>setPage('upload-json'), isActive: page==='upload-json',
+          svg:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        }
+      ]}/>
 
       {page==='library' && (
         <div className="lib-shell anim">
@@ -706,9 +657,9 @@ export default function TestZyro() {
               </>}
             </div>
             <div className="lib-sidebar-footer">
-              <button className="lib-upload-btn" onClick={()=>setPage('upload-json')}>
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                Upload JSON Test
+              <button className="btn-sm" onClick={loadTree} style={{width:'100%',justifyContent:'center'}}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Refresh Tests
               </button>
             </div>
           </div>
@@ -1174,11 +1125,14 @@ body{background:var(--bg,#f0f4ff);color:var(--text,#1a1a2e);font-family:'Inter',
 .trow-att-score{font-weight:700;font-family:'JetBrains Mono',monospace}
 .trow-att-acc{color:var(--muted,#6b7280)}
 .trow-att-date{color:var(--muted,#9ca3af);font-family:'JetBrains Mono',monospace}
+.trow-att-sep{color:var(--muted,#9ca3af)}
 .trow-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;flex-wrap:wrap}
-.trow-btn{padding:8px 16px;border-radius:8px;font-family:'Inter',sans-serif;font-weight:700;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap}
-.trow-btn.outline{background:transparent;border:1.5px solid var(--border,#e0e4ff);color:var(--text,#1a237e)}
-.trow-btn.outline:hover{border-color:#1a237e;background:#e8eaf6}
-.trow-btn.primary{border:none;color:white;box-shadow:0 3px 10px rgba(0,0,0,.15)}
+.trow-btn{padding:8px 18px;border-radius:20px;font-family:'Inter',sans-serif;font-weight:600;font-size:.78rem;cursor:pointer;transition:all .15s;white-space:nowrap;letter-spacing:.1px}
+.trow-btn.outline{background:transparent;border:1.5px solid var(--border,#e0e4ff);color:var(--text,#374151)}
+.trow-btn.outline:hover{border-color:#1a237e;color:#1a237e;background:#f0f4ff}
+.trow-btn.primary{border:1.5px solid #1a237e;background:white;color:#1a237e;font-weight:700}
+.trow-btn.primary:hover{background:#1a237e;color:white}
+.trow-btn:disabled{opacity:.5;cursor:not-allowed}
 .anim{animation:up .3s ease both}
 /* Stats bar */
 .stats-bar{background:var(--surface,white);border:1px solid var(--border,#e0e4ff);border-radius:10px;padding:10px 18px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:.78rem;color:var(--muted,#666)}
@@ -1378,3 +1332,4 @@ body{background:var(--bg,#f0f4ff);color:var(--text,#1a1a2e);font-family:'Inter',
 .hero-tw-cursor{color:#fdd835;font-weight:300}
 .hero-tw-sub{font-size:.82rem;color:rgba(255,255,255,.7);font-weight:500}
 `
+

@@ -555,20 +555,21 @@ export default function Analyser() {
                     )}
                   </div>
 
-                  {/* Options always show below image - but only if opts have real text */}
-                  {curQ2.type==='MCQ'&&curQ2.opts&&curQ2.opts.some(o=>o&&o.length>1)&&(
+                  {/* Options always show below - even for image questions so user can see their answer */}
+                  {curQ2.type==='MCQ'&&(
                     <div className="rq-opts">
                       {['A','B','C','D'].map((lbl,i)=>{
                         const isCor=lbl===(curQ2.correctAnswer||'').toUpperCase().trim()
                         const isYrs=lbl===(curQ2.yourAnswer||'').toUpperCase().trim()
+                        const hasText = curQ2.opts?.[i] && curQ2.opts[i].length > 1
                         return(
                           <div key={lbl} className={`rq-opt${isCor?' cor':isYrs&&!isCor?' wrg':''}`}>
                             <div className="rq-lbl">{lbl}</div>
-                            <div className="rq-otext">{curQ2.opts[i]||`Option ${lbl}`}</div>
-                            <div className="rq-tags">
-                              {isCor&&isYrs&&<span className="rqt green">{Ic.correct} Your Answer · Correct</span>}
-                              {isCor&&!isYrs&&<span className="rqt green">{Ic.correct} Correct Answer</span>}
-                              {isYrs&&!isCor&&<span className="rqt red">{Ic.wrong} Your Answer</span>}
+                            {hasText && <div className="rq-otext">{curQ2.opts[i]}</div>}
+                            <div className="rq-tags" style={{marginLeft:'auto'}}>
+                              {isCor&&isYrs&&<span className="rqt green">{Ic.correct} Your Ans · Correct</span>}
+                              {isCor&&!isYrs&&<span className="rqt green">{Ic.correct} Correct</span>}
+                              {isYrs&&!isCor&&<span className="rqt red">{Ic.wrong} Your Ans</span>}
                             </div>
                           </div>
                         )

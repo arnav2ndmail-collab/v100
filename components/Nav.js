@@ -39,14 +39,14 @@ export default function Nav({ active, extraLinks }) {
             whiteSpace:'nowrap',flexShrink:0,transition:'all .15s',fontFamily:"'Inter',sans-serif"
           }}>{svg}{label}</Link>
         ))}
-        {extraLinks&&extraLinks.map(({label,onClick,isActive})=>(
+        {extraLinks&&extraLinks.map(({label,onClick,isActive,svg})=>(
           <button key={label} onClick={onClick} style={{
             padding:'6px 10px',borderRadius:6,fontWeight:isActive?700:500,
             fontSize:'.78rem',color:isActive?'white':'rgba(255,255,255,.75)',
             background:isActive?'rgba(255,255,255,.2)':'transparent',
             border:'none',cursor:'pointer',display:'inline-flex',alignItems:'center',gap:5,
-            whiteSpace:'nowrap',flexShrink:0,fontFamily:"'Inter',sans-serif"
-          }}>{label}</button>
+            whiteSpace:'nowrap',flexShrink:0,fontFamily:"'Inter',sans-serif",transition:'all .15s'
+          }}>{svg}{label}</button>
         ))}
       </nav>
       <button onClick={toggleDark} title={dark?'Light':'Dark'} style={{background:'rgba(255,255,255,.12)',border:'1px solid rgba(255,255,255,.2)',color:'white',width:34,height:34,borderRadius:8,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
