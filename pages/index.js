@@ -591,7 +591,7 @@ export default function TestZyro() {
     )
   }
 
-  const isBitsatTest = isBITSAT(cfg.subject)
+  const isBitsatTest = isBITSAT(cfg.subject||'')
   const subjGroups={}
   if(isBitsatTest){Qs.forEach((q2,i)=>{const s=q2.subject||'Other';if(!subjGroups[s])subjGroups[s]=[];subjGroups[s].push(i)})}
   const navSubjects=isBitsatTest?BITSAT_SUBJECTS.filter(s=>subjGroups[s]?.length>0):[]
@@ -623,11 +623,7 @@ export default function TestZyro() {
       </Head>
       <style>{CSS}</style>
 
-      <Nav active="Library" extraLinks={[
-        { label:'Upload JSON', onClick:()=>setPage('upload-json'), isActive: page==='upload-json',
-          svg:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        }
-      ]}/>
+      <Nav active="Library"/>
 
       {page==='library' && (
         <div className="lib-shell anim">
@@ -1333,3 +1329,4 @@ body{background:var(--bg,#f0f4ff);color:var(--text,#1a1a2e);font-family:'Inter',
 .hero-tw-cursor{color:#fdd835;font-weight:300}
 .hero-tw-sub{font-size:.82rem;color:rgba(255,255,255,.7);font-weight:500}
 `
+
