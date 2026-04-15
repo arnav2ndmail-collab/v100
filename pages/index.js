@@ -591,6 +591,7 @@ export default function TestZyro() {
     )
   }
 
+  const isBitsatTest = isBITSAT(cfg.subject)
   const subjGroups={}
   if(isBitsatTest){Qs.forEach((q2,i)=>{const s=q2.subject||'Other';if(!subjGroups[s])subjGroups[s]=[];subjGroups[s].push(i)})}
   const navSubjects=isBitsatTest?BITSAT_SUBJECTS.filter(s=>subjGroups[s]?.length>0):[]
@@ -1332,4 +1333,3 @@ body{background:var(--bg,#f0f4ff);color:var(--text,#1a1a2e);font-family:'Inter',
 .hero-tw-cursor{color:#fdd835;font-weight:300}
 .hero-tw-sub{font-size:.82rem;color:rgba(255,255,255,.7);font-weight:500}
 `
-
