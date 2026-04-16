@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import Head from 'next/head'
 import Nav from '../components/Nav'
+import { getSupabase, isSupabaseReady } from '../lib/supabase'
 
 const pad = n => String(n).padStart(2,'0')
 const fmt = s => `${pad(Math.floor(s/3600))}:${pad(Math.floor((s%3600)/60))}:${pad(s%60)}`
@@ -85,6 +86,7 @@ export default function TestZyro() {
   const [cbtLoading, setCbtLoading] = useState(false)
   const [attempts, setAttempts]     = useState([])
   const [activeFolder, setActiveFolder] = useState(null)
+  const [sbUser, setSbUser]         = useState(null) // logged-in Supabase user
 
   const timerRef  = useRef(null)
   const startRef  = useRef(null)
@@ -99,6 +101,12 @@ export default function TestZyro() {
   useEffect(() => {
     setSavedTests(JSON.parse(localStorage.getItem(SAVED_KEY)||'[]'))
     setAttempts(JSON.parse(localStorage.getItem(ATTEMPTS_KEY)||'[]'))
+    // Check Supabase session
+    if (isSupabaseReady()) {
+      getSupabase().auth.getSession().then(({ data }) => {
+        if (data.session) setSbUser(data.session.user)
+      })
+    }
     // Load resume
     try {
       const rd = loadResume()
@@ -334,6 +342,26 @@ export default function TestZyro() {
     }
     const updated = saveAttempt(attempt)
     setAttempts(updated)
+    // Also save to Supabase if user is logged in
+    if (isSupabaseReady() && sbUser) {
+      try {
+        const { data: { session } } = await getSupabase().auth.getSession()
+        if (session) {
+          fetch('/api/save-attempt', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+session.access_token },
+            body: JSON.stringify({
+              testId: cfg.id, testPath: cfg.testPath||cfg.id, testTitle: cfg.title,
+              subject: cfg.subject, score: res.score, maxScore: res.max,
+              correct: res.cor, wrong: res.wrg, skipped: res.skp, unattempted: res.un,
+              accuracy: res.pct, duration: res.elapsed,
+              marksCorrect: cfg.mCor, marksWrong: cfg.mNeg,
+              subjStats: res.subjStats, answers: finalAns.map((a,i)=>({yourAnswer:a,correctAnswer:Qs[i]?.ans,result:!a?'unattempted':a==='skip'?'skipped':((Qs[i]?.ans||'').toUpperCase().trim()===(a||'').toUpperCase().trim())?'correct':'wrong'}))
+            })
+          }).catch(()=>{}) // silent fail
+        }
+      } catch(e) {}
+    }
     // Increment global counter
     try {
       const g = parseInt(localStorage.getItem('tz_global_tests')||'0')
